@@ -1,149 +1,136 @@
-n form view properly in the mobile view
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Attendance System</title>
+    <title>Attendance Management System</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="screen active">
-        <div class="login-container">
-            <div class="login-header">
-                <h1>Employee Attendance System</h1>
-                <p>Professional Time Tracking Solution</p>
-            </div>
-            <div class="login-form">
-                <input type="text" id="employeeId" placeholder="Enter Employee ID or Name" class="input-field">
-                <button id="btnLogin" class="btn btn-primary">Login</button>
-                <div id="loginError" class="error-message"></div>
-            </div>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>📍 Attendance Management System</h1>
+            <p class="subtitle">Geo-Fenced Attendance Tracker with Database Storage</p>
+            <p class="subtitle" style="font-size: 0.9em; opacity: 0.8;">💾 All data saved to IndexedDB database - Never gets erased!</p>
+        </header>
+
+        <!-- Location Status Banner -->
+        <div id="locationStatus" class="status-banner">
+            <span id="statusIcon">🔍</span>
+            <span id="statusText">Checking location...</span>
         </div>
-    </div>
 
-    <!-- Dashboard Screen -->
-    <div id="dashboardScreen" class="screen">
-        <div class="container">
-            <!-- Header -->
-            <header>
-                <div class="header-content">
-                    <div>
-                        <h1>Attendance Dashboard</h1>
-                        <p class="user-name">Welcome, <span id="employeeName"></span></p>
-                    </div>
-                    <button id="btnLogout" class="btn-logout">Logout</button>
-                </div>
-            </header>
-
-            <!-- Date & Time Display -->
-            <div class="datetime-card">
-                <div class="datetime-item">
-                    <span class="label">Date</span>
-                    <span id="currentDate" class="value"></span>
-                </div>
-                <div class="datetime-item">
-                    <span class="label">Current Time</span>
-                    <span id="currentTime" class="value"></span>
-                </div>
-                <div class="datetime-item">
-                    <span class="label">Location</span>
-                    <span id="locationStatus" class="value">📍 Detecting...</span>
-                </div>
-                <div class="datetime-item">
-                    <span class="label">Status</span>
-                    <span id="attendanceStatus" class="value status-pending">Not Marked</span>
-                </div>
-            </div>
-
-            <!-- Attendance Actions -->
-            <div class="attendance-actions">
-                <button id="btnCheckIn" class="btn btn-checkin">
-                    <span class="btn-icon">→</span>
-                    <span>CHECK IN</span>
-                </button>
-                <button id="btnCheckOut" class="btn btn-checkout" disabled>
-                    <span class="btn-icon">←</span>
-                    <span>CHECK OUT</span>
-                </button>
-            </div>
-
-            <!-- Today's Summary -->
-            <div class="today-summary">
-                <div class="summary-item">
-                    <span class="summary-label">Check-In Time</span>
-                    <span id="checkInTime" class="summary-value">--:--</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Check-Out Time</span>
-                    <span id="checkOutTime" class="summary-value">--:--</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Working Hours</span>
-                    <span id="workingHours" class="summary-value">0h 0m</span>
-                </div>
-            </div>
-
-            <!-- Message Box -->
-            <div id="messageBox" class="message-box"></div>
-
-            <!-- Data Storage Info -->
-            <div class="info-card">
-                <h3>📊 Data Storage Information</h3>
-                <p><strong>Storage Location:</strong> Browser LocalStorage (Persistent)</p>
-                <p><strong>Data Never Expires:</strong> Saved permanently until manually cleared</p>
-                <p><strong>View Reports:</strong> Click "View All Records" button below</p>
-                <p><strong>Notifications:</strong> SMS to +91 7418167906 | Email to info@craftedclipz.in</p>
-            </div>
-
-            <!-- Admin Panel Toggle -->
-            <div class="admin-toggle">
-                <button id="btnAdminView" class="btn-admin">📋 View All Records & Reports</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Screen -->
-    <div id="adminScreen" class="screen">
-        <div class="container">
-            <header>
-                <div class="header-content">
-                    <h1>Admin Panel</h1>
-                    <button id="btnBackToDashboard" class="btn-logout">Back to Dashboard</button>
-                </div>
-            </header>
-
-            <!-- Filter Section -->
-            <div class="filter-section">
-                <select id="filterEmployee" class="filter-select">
-                    <option value="all">All Employees</option>
+        <!-- Attendance Form -->
+        <section class="attendance-section">
+            <h2>Mark Attendance</h2>
+            
+            <!-- Employee Selection -->
+            <div class="form-group">
+                <label for="employeeSelect">Select Employee:</label>
+                <select id="employeeSelect" class="input-field">
+                    <option value="">-- Select Employee --</option>
+                    <option value="John Doe">John Doe</option>
+                    <option value="Jane Smith">Jane Smith</option>
                 </select>
-                <input type="date" id="filterDate" class="filter-date">
-                <button id="btnClearFilters" class="btn-filter">Clear Filters</button>
             </div>
 
-            <!-- Records Table -->
-            <div class="records-container">
-                <table class="records-table">
+            <!-- Current Date & Time Display -->
+            <div class="datetime-display">
+                <div class="datetime-item">
+                    <span class="label">Date:</span>
+                    <span id="currentDate" class="value">--</span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Time:</span>
+                    <span id="currentTime" class="value">--</span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Distance:</span>
+                    <span id="distanceDisplay" class="value">--</span>
+                </div>
+            </div>
+
+            <!-- Attendance Buttons -->
+            <div class="button-group">
+                <button id="btnCheckIn" class="btn btn-in" disabled>
+                    <span class="btn-icon">➡️</span> CHECK IN
+                </button>
+                <button id="btnCheckOut" class="btn btn-out" disabled>
+                    <span class="btn-icon">⬅️</span> CHECK OUT
+                </button>
+            </div>
+
+            <!-- Message Display -->
+            <div id="messageBox" class="message-box"></div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="reports-section">
+            <h2>Attendance Reports</h2>
+            
+            <!-- Timeline Filters -->
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="daily">Daily</button>
+                <button class="filter-btn" data-filter="weekly">Weekly</button>
+                <button class="filter-btn" data-filter="monthly">Monthly</button>
+                <button class="filter-btn" data-filter="yearly">Yearly</button>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="export-group">
+                <button id="btnExportCSV" class="btn-export">📄 Export CSV</button>
+                <button id="btnExportExcel" class="btn-export">📊 Export Excel</button>
+                <button id="btnBackupData" class="btn-export">💾 Backup Data</button>
+                <button id="btnRestoreData" class="btn-export">📥 Restore Data</button>
+            </div>
+            <input type="file" id="fileRestore" accept=".json" style="display: none;">
+
+            <!-- Attendance Table -->
+            <div class="table-container">
+                <table id="attendanceTable">
                     <thead>
                         <tr>
                             <th>Employee</th>
                             <th>Date</th>
-                            <th>Check-In</th>
-                            <th>Check-Out</th>
-                            <th>Hours</th>
+                            <th>IN Time</th>
+                            <th>OUT Time</th>
+                            <th>Distance (m)</th>
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="recordsTableBody">
+                    <tbody id="attendanceTableBody">
                         <tr>
-                            <td colspan="6" class="no-records">No records found</td>
+                            <td colspan="6" class="no-data">No attendance records found</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
+
+            <!-- Summary Statistics -->
+            <div class="summary-section">
+                <h3>Attendance Summary</h3>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-label">John Doe</div>
+                        <div class="card-value" id="summaryJohn">0 days</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-label">Jane Smith</div>
+                        <div class="card-value" id="summaryJane">0 days</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2026 Attendance Management System | Geo-Fencing Enabled 📍</p>
+        </footer>
     </div>
 
     <script src="script.js"></script>
