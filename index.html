@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Employee Attendance System</h1>
+                <p>Professional Time Tracking Solution</p>
+            </div>
+            <div class="login-form">
+                <input type="text" id="employeeId" placeholder="Enter Employee ID or Name" class="input-field">
+                <button id="btnLogin" class="btn btn-primary">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="screen">
+        <div class="container">
+            <!-- Header -->
+            <header>
+                <div class="header-content">
+                    <div>
+                        <h1>Attendance Dashboard</h1>
+                        <p class="user-name">Welcome, <span id="employeeName"></span></p>
+                    </div>
+                    <button id="btnLogout" class="btn-logout">Logout</button>
+                </div>
+            </header>
+
+            <!-- Date & Time Display -->
+            <div class="datetime-card">
+                <div class="datetime-item">
+                    <span class="label">Date</span>
+                    <span id="currentDate" class="value"></span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Current Time</span>
+                    <span id="currentTime" class="value"></span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Distance:</span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Status</span>
+                    <span id="attendanceStatus" class="value status-pending">Not Marked</span>
+                </div>
+            </div>
+
+            <!-- Attendance Actions -->
+            <div class="attendance-actions">
+                <button id="btnCheckIn" class="btn btn-checkin">
+                    <span class="btn-icon">→</span>
+                    <span>CHECK IN</span>
+                </button>
+                <button id="btnCheckOut" class="btn btn-checkout" disabled>
+                    <span class="btn-icon">←</span>
+                    <span>CHECK OUT</span>
+                </button>
+            </div>
+
+            <!-- Today's Summary -->
+            <div class="today-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Check-In Time</span>
+                    <span id="checkInTime" class="summary-value">--:--</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Check-Out Time</span>
+                    <span id="checkOutTime" class="summary-value">--:--</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Working Hours</span>
+                    <span id="workingHours" class="summary-value">0h 0m</span>
+                </div>
+            </div>
+
+            <!-- Message Box -->
+            <div id="messageBox" class="message-box"></div>
+
+            <!-- Admin Panel Toggle -->
+            <div class="admin-toggle">
+                <button id="btnAdminView" class="btn-admin">View All Records</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Screen -->
+    <div id="adminScreen" class="screen">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <h1>Admin Panel</h1>
+                    <button id="btnBackToDashboard" class="btn-logout">Back to Dashboard</button>
+                </div>
+            </header>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <select id="filterEmployee" class="filter-select">
+                    <option value="all">All Employees</option>
+                </select>
+                <input type="date" id="filterDate" class="filter-date">
+                <button id="btnClearFilters" class="btn-filter">Clear Filters</button>
+            </div>
+
+            <!-- Records Table -->
+            <div class="records-container">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Check-In</th>
+                            <th>Check-Out</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <tr>
+                            <td colspan="6" class="no-records">No records found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

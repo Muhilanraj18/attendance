@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+        }
+        .btn-in {
+            background: #4caf50;
+        }
+        .btn-out {
+            background: #f44336;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Attendance System Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Button Click Events</h2>
+        <button class="btn-in" onclick="testClick('IN')">Test CHECK IN</button>
+        <button class="btn-out" onclick="testClick('OUT')">Test CHECK OUT</button>
+        <div id="clickStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: LocalStorage</h2>
+        <button class="btn-in" onclick="testLocalStorage()">Test LocalStorage</button>
+        <div id="storageStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Geolocation</h2>
+        <button class="btn-in" onclick="testGeolocation()">Test Location</button>
+        <div id="locationStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Current Status</h2>
+        <button class="btn-in" onclick="checkMainApp()">Check Main App</button>
+        <div id="mainAppStatus"></div>
+    </div>
+
+    <script>
+        function testClick(type) {
+            const status = document.getElementById('clickStatus');
+            status.className = 'status success';
+            status.textContent = `✅ ${type} button clicked successfully at ${new Date().toLocaleTimeString()}`;
+        }
+
+        function testLocalStorage() {
+            const status = document.getElementById('storageStatus');
+            try {
+                localStorage.setItem('test', 'working');
+                const result = localStorage.getItem('test');
+                if (result === 'working') {
+                    status.className = 'status success';
+                    status.textContent = '✅ LocalStorage is working correctly';
+                    localStorage.removeItem('test');
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '❌ LocalStorage failed';
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '❌ LocalStorage error: ' + error.message;
+            }
+        }
+
+        function testGeolocation() {
+            const status = document.getElementById('locationStatus');
+            status.className = 'status info';
+            status.textContent = '🔍 Checking location...';
+            
+            if (!navigator.geolocation) {
+                status.className = 'status error';
+                status.textContent = '❌ Geolocation not supported';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    status.className = 'status success';
+                    status.textContent = `✅ Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)} (Accuracy: ±${position.coords.accuracy.toFixed(0)}m)`;
+                },
+                (error) => {
+                    status.className = 'status error';
+                    let msg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            msg = 'Location permission denied';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            msg = 'Location unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            msg = 'Location timeout';
+                            break;
+                        default:
+                            msg = 'Unknown error';
+                    }
+                    status.textContent = `❌ ${msg}`;
+                }
+            );
+        }
+
+        function checkMainApp() {
+            const status = document.getElementById('mainAppStatus');
+            status.className = 'status info';
+            
+            let checks = [];
+            
+            // Check if running on localhost/HTTPS
+            const protocol = window.location.protocol;
+            const host = window.location.hostname;
+            if (protocol === 'https:' || host === 'localhost' || host === '127.0.0.1') {
+                checks.push('✅ Protocol: OK (' + protocol + '//' + host + ')');
+            } else {
+                checks.push('⚠️ Protocol: May have issues (use localhost or HTTPS)');
+            }
+            
+            // Check localStorage records
+            const records = localStorage.getItem('attendanceRecords');
+            if (records) {
+                const parsed = JSON.parse(records);
+                checks.push(`✅ Found ${parsed.length} attendance record(s)`);
+            } else {
+                checks.push('ℹ️ No attendance records yet');
+            }
+            
+            // Check if main scripts loaded
+            checks.push('ℹ️ Open index.html in browser to test full app');
+            checks.push('ℹ️ Press F12 to open DevTools and check Console for errors');
+            
+            status.className = 'status info';
+            status.innerHTML = checks.join('<br>');
+        }
+
+        // Auto-run status check on load
+        window.onload = () => {
+            checkMainApp();
+        };
+    </script>
+</body>
+</html>
