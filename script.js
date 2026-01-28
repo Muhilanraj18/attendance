@@ -505,24 +505,41 @@ function clearFilters() {
 // EVENT LISTENERS
 // ============================================
 
-btnLogin.addEventListener('click', () => {
-    login(employeeIdInput.value);
-});
-
-employeeIdInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        login(employeeIdInput.value);
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOM Loaded');
+    
+    if (btnLogin) {
+        btnLogin.addEventListener('click', () => {
+            console.log('Login button clicked');
+            login(employeeIdInput.value);
+        });
+    } else {
+        console.error('❌ Login button not found!');
     }
-});
 
-btnLogout.addEventListener('click', logout);
-btnCheckIn.addEventListener('click', checkIn);
-btnCheckOut.addEventListener('click', checkOut);
-btnAdminView.addEventListener('click', showAdminPanel);
-btnBackToDashboard.addEventListener('click', backToDashboard);
-filterEmployee.addEventListener('change', loadAllRecords);
-filterDate.addEventListener('change', loadAllRecords);
-btnClearFilters.addEventListener('click', clearFilters);
+    if (employeeIdInput) {
+        employeeIdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                console.log('Enter key pressed');
+                login(employeeIdInput.value);
+            }
+        });
+    } else {
+        console.error('❌ Employee input not found!');
+    }
+
+    if (btnLogout) btnLogout.addEventListener('click', logout);
+    if (btnCheckIn) btnCheckIn.addEventListener('click', checkIn);
+    if (btnCheckOut) btnCheckOut.addEventListener('click', checkOut);
+    if (btnAdminView) btnAdminView.addEventListener('click', showAdminPanel);
+    if (btnBackToDashboard) btnBackToDashboard.addEventListener('click', backToDashboard);
+    if (filterEmployee) filterEmployee.addEventListener('change', loadAllRecords);
+    if (filterDate) filterDate.addEventListener('change', loadAllRecords);
+    if (btnClearFilters) btnClearFilters.addEventListener('click', clearFilters);
+    
+    console.log('✅ All event listeners attached');
+});
 
 // ============================================
 // INITIALIZATION
