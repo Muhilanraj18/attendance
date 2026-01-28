@@ -41,6 +41,7 @@ const recordsTableBody = document.getElementById('recordsTableBody');
 const filterEmployee = document.getElementById('filterEmployee');
 const filterDate = document.getElementById('filterDate');
 const btnClearFilters = document.getElementById('btnClearFilters');
+const locationStatusSpan = document.getElementById('locationStatus');
 
 // Initialize date/time immediately
 if (currentDateSpan && currentTimeSpan) {
@@ -53,6 +54,8 @@ if (currentDateSpan && currentTimeSpan) {
 // ============================================
 
 function getLocation() {
+    if (locationStatusSpan) locationStatusSpan.textContent = '📍 Detecting...';
+    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -61,16 +64,21 @@ function getLocation() {
                     lng: position.coords.longitude
                 };
                 calculateDistance();
+                if (locationStatusSpan) {
+                    locationStatusSpan.textContent = `✅ ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Located'}`;
+                }
                 console.log('✅ Location captured:', userLocation);
             },
             (error) => {
                 console.warn('⚠️ Location access denied:', error.message);
+                if (locationStatusSpan) locationStatusSpan.textContent = '⚠️ Location denied';
                 userLocation = null;
                 locationDistance = null;
             }
         );
     } else {
         console.warn('⚠️ Geolocation not supported');
+        if (locationStatusSpan) locationStatusSpan.textContent = '❌ Not supported';
     }
 }
 

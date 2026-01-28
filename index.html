@@ -47,7 +47,8 @@
                     <span id="currentTime" class="value"></span>
                 </div>
                 <div class="datetime-item">
-                    <span class="label">Distance:</span>
+                    <span class="label">Location</span>
+                    <span id="locationStatus" class="value">📍 Detecting...</span>
                 </div>
                 <div class="datetime-item">
                     <span class="label">Status</span>
@@ -86,9 +87,18 @@
             <!-- Message Box -->
             <div id="messageBox" class="message-box"></div>
 
+            <!-- Data Storage Info -->
+            <div class="info-card">
+                <h3>📊 Data Storage Information</h3>
+                <p><strong>Storage Location:</strong> Browser LocalStorage (Persistent)</p>
+                <p><strong>Data Never Expires:</strong> Saved permanently until manually cleared</p>
+                <p><strong>View Reports:</strong> Click "View All Records" button below</p>
+                <p><strong>Notifications:</strong> SMS to +91 7418167906 | Email to info@craftedclipz.in</p>
+            </div>
+
             <!-- Admin Panel Toggle -->
             <div class="admin-toggle">
-                <button id="btnAdminView" class="btn-admin">View All Records</button>
+                <button id="btnAdminView" class="btn-admin">📋 View All Records & Reports</button>
             </div>
         </div>
     </div>
