@@ -7,7 +7,21 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
-    officeLocation: { lat: 8.1848089, lng: 77.3948716 }
+    officeLocation: { lat: 8.1848089, lng: 77.3948716 },
+    emailjs: {
+        serviceId: 'service_xxxxxxx',  // Replace with your EmailJS Service ID
+        templateId: 'template_xxxxxxx', // Replace with your EmailJS Template ID
+        publicKey: 'YOUR_PUBLIC_KEY'    // Replace with your EmailJS Public Key
+    },
+    whatsapp: {
+        // Option 1: Twilio WhatsApp API
+        twilioAccountSid: 'YOUR_TWILIO_ACCOUNT_SID',
+        twilioAuthToken: 'YOUR_TWILIO_AUTH_TOKEN',
+        twilioWhatsAppNumber: 'whatsapp:+14155238886', // Twilio WhatsApp number
+        
+        // Option 2: CallMeBot API (Free - no signup needed)
+        callMeBotApiKey: 'YOUR_CALLMEBOT_API_KEY' // Get from calling bot
+    }
 };
 
 // Global State
@@ -181,20 +195,23 @@ function simulateNotification(type, employeeId, time) {
         location: userLocation
     };
     
-    console.log('📱 AUTOMATIC NOTIFICATION TRIGGERED');
+    console.log('📱 SENDING NOTIFICATION');
     console.log('='.repeat(50));
     console.log(`Type: ${type.toUpperCase()}`);
     console.log(`Employee: ${employeeId}`);
     console.log(`Time: ${formatTime(new Date(time))}`);
-    console.log(`Location: ${userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A'}`);
-    console.log(`Distance: ${locationDistance ? locationDistance.toFixed(2) + 'm' : 'N/A'}`);
-    console.log(`\n📲 SMS sent to: ${CONFIG.notificationPhone}`);
-    console.log(`✉️ Email sent to: ${CONFIG.notificationEmail}`);
+    console.log(`� Sending WhatsApp to: ${CONFIG.notificationPhone}`);
+    console.log(`✉️ Sending Email to: ${CONFIG.notificationEmail}`);
     console.log('='.repeat(50));
     
-    const notifMsg = `✅ NOTIFICATION SENT!\n📲 SMS: ${CONFIG.notificationPhone}\n✉️ Email: ${CONFIG.notificationEmail}\n📍 ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Location captured'}`;
+    // Send Email via EmailJS
+    sendEmail(type, employeeId, time);
     
-    // Display notification message on screen instead of alert
+    // Send WhatsApp Message
+    sendWhatsApp(type, employeeId, time);
+    
+    const notifMsg = `✅ NOTIFICATION SENT!\n💬 WhatsApp: ${CONFIG.notificationPhone}\n✉️ Email: ${CONFIG.notificationEmail}\n📍 ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Location captured'}`;
+    
     showNotificationMessage(notifMsg, 'success');
     
     const notifications = JSON.parse(localStorage.getItem('notificationLog') || '[]');
@@ -206,6 +223,124 @@ function simulateNotification(type, employeeId, time) {
     localStorage.setItem('notificationLog', JSON.stringify(notifications));
     
     return message;
+}
+
+// ============================================
+// EMAIL SENDING (EmailJS)
+// ============================================
+
+function sendEmail(type, employeeId, time) {
+    // Initialize EmailJS if not already done
+    if (typeof emailjs !== 'undefined') {
+        emailjs.init(CONFIG.emailjs.publicKey);
+        
+        const templateParams = {
+            employee_name: employeeId,
+            action: type.toUpperCase(),
+            date: formatDate(new Date(time)),
+            time: formatTime(new Date(time)),
+            phone: CONFIG.notificationPhone,
+            email: CONFIG.notificationEmail,
+            location: userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A',
+            distance: locationDistance ? `${locationDistance.toFixed(2)}m` : 'N/A'
+        };
+        
+        emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, templateParams)
+            .then(function(response) {
+                console.log('✅ Email sent successfully!', response.status, response.text);
+            }, function(error) {
+                console.error('❌ Email failed to send:', error);
+            });
+    } else {
+        console.warn('⚠️ EmailJS not loaded. Email not sent.');
+    }
+}
+
+// ============================================
+// WHATSAPP SENDING
+// ============================================
+
+function sendWhatsApp(type, employeeId, time) {
+    const message = `*Attendance Alert*\n\nEmployee: ${employeeId}\nAction: ${type.toUpperCase()}\nDate: ${formatDate(new Date(time))}\nTime: ${formatTime(new Date(time))}\nLocation: ${userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A'}\nDistance: ${locationDistance ? `${locationDistance.toFixed(2)}m from office` : 'N/A'}`;
+    
+    // Option 1: Twilio WhatsApp API (Recommended for production)
+    sendWhatsAppViaTwilio(message);
+    
+    // Option 2: CallMeBot API (Free alternative - uncomment to use)
+    // sendWhatsAppViaCallMeBot(message);
+}
+
+// Method 1: Twilio WhatsApp API
+function sendWhatsAppViaTwilio(message) {
+    const accountSid = CONFIG.whatsapp.twilioAccountSid;
+    const authToken = CONFIG.whatsapp.twilioAuthToken;
+    const fromNumber = CONFIG.whatsapp.twilioWhatsAppNumber;
+    const toNumber = `whatsapp:${CONFIG.notificationPhone}`;
+    
+    if (accountSid === 'YOUR_TWILIO_ACCOUNT_SID') {
+        console.warn('⚠️ Twilio not configured. Set up Twilio WhatsApp API to enable WhatsApp messages.');
+        return;
+    }
+    
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const auth = btoa(`${accountSid}:${authToken}`);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            'From': fromNumber,
+            'To': toNumber,
+            'Body': message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.sid) {
+            console.log('✅ WhatsApp message sent successfully via Twilio!');
+        } else {
+            console.error('❌ WhatsApp failed:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('❌ Twilio API error:', error);
+    });
+}
+
+// Method 2: CallMeBot API (Free - No signup needed)
+function sendWhatsAppViaCallMeBot(message) {
+    const apiKey = CONFIG.whatsapp.callMeBotApiKey;
+    const phone = CONFIG.notificationPhone.replace('+', '');
+    
+    if (apiKey === 'YOUR_CALLMEBOT_API_KEY') {
+        console.warn('⚠️ CallMeBot not configured. Follow setup guide to enable WhatsApp.');
+        return;
+    }
+    
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
+    
+    fetch(url)
+    .then(response => response.text())
+    .then(data => {
+        console.log('✅ WhatsApp message sent successfully via CallMeBot!');
+    })
+    .catch(error => {
+        console.error('❌ CallMeBot API error:', error);
+        console.log('⚠️ Make sure you have registered your phone number with CallMeBot');
+    });
+}
+
+// Method 3: WhatsApp Web URL (Opens WhatsApp - requires user click)
+function sendWhatsAppViaWebURL(message) {
+    const phone = CONFIG.notificationPhone.replace('+', '');
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // This will open WhatsApp in a new tab (requires user interaction)
+    console.log('💬 Opening WhatsApp Web:', url);
+    window.open(url, '_blank');
 }
 
 // ============================================
