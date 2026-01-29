@@ -15,34 +15,13 @@ let currentUser = null;
 let userLocation = null;
 let locationDistance = null;
 
-// Clear old data from localStorage
-console.log('🗑️ Clearing old attendance data...');
-localStorage.removeItem('attendanceData');
-localStorage.removeItem('notificationLog');
-localStorage.removeItem('attendanceRecords');
-localStorage.removeItem('attendanceRecords_lastSave');
-localStorage.removeItem('attendanceRecords_backup');
-console.log('✅ Old data cleared - Fresh start!');
-
 // DOM Elements
-const dashboardScreen = document.getElementById('dashboardScreen');
-const adminScreen = document.getElementById('adminScreen');
 const employeeSelect = document.getElementById('employeeSelect');
 const currentDateSpan = document.getElementById('currentDate');
 const currentTimeSpan = document.getElementById('currentTime');
-const attendanceStatusSpan = document.getElementById('attendanceStatus');
 const btnCheckIn = document.getElementById('btnCheckIn');
 const btnCheckOut = document.getElementById('btnCheckOut');
-const checkInTimeSpan = document.getElementById('checkInTime');
-const checkOutTimeSpan = document.getElementById('checkOutTime');
-const workingHoursSpan = document.getElementById('workingHours');
 const messageBox = document.getElementById('messageBox');
-const btnAdminView = document.getElementById('btnAdminView');
-const btnBackToDashboard = document.getElementById('btnBackToDashboard');
-const recordsTableBody = document.getElementById('recordsTableBody');
-const filterEmployee = document.getElementById('filterEmployee');
-const filterDate = document.getElementById('filterDate');
-const btnClearFilters = document.getElementById('btnClearFilters');
 const locationStatusSpan = document.getElementById('locationStatus');
 
 // ============================================
@@ -214,7 +193,9 @@ function simulateNotification(type, employeeId, time) {
     console.log('='.repeat(50));
     
     const notifMsg = `✅ NOTIFICATION SENT!\n📲 SMS: ${CONFIG.notificationPhone}\n✉️ Email: ${CONFIG.notificationEmail}\n📍 ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Location captured'}`;
-    alert(notifMsg);
+    
+    // Display notification message on screen instead of alert
+    showNotificationMessage(notifMsg, 'success');
     
     const notifications = JSON.parse(localStorage.getItem('notificationLog') || '[]');
     notifications.push({
@@ -238,6 +219,21 @@ function showMessage(text, type = 'info') {
     setTimeout(() => {
         messageBox.className = 'message-box';
     }, 5000);
+}
+
+function showNotificationMessage(text, type = 'info') {
+    messageBox.innerHTML = text.replace(/\n/g, '<br>');
+    messageBox.className = `message-box ${type}`;
+    messageBox.style.display = 'block';
+    messageBox.style.whiteSpace = 'pre-line';
+    messageBox.style.padding = '20px';
+    messageBox.style.fontSize = '16px';
+    messageBox.style.lineHeight = '1.8';
+    
+    setTimeout(() => {
+        messageBox.style.display = '';
+        messageBox.className = 'message-box';
+    }, 8000);
 }
 
 // ============================================
@@ -283,36 +279,9 @@ function loadTodayAttendance() {
         return;
     }
     
-    const attendance = getTodayAttendance(currentUser);
-    
-    if (attendance) {
-        checkInTimeSpan.textContent = formatTime(new Date(attendance.checkInTime));
-        
-        if (attendance.checkOutTime) {
-            checkOutTimeSpan.textContent = formatTime(new Date(attendance.checkOutTime));
-            const { hours, minutes } = calculateWorkingHours(attendance.checkInTime, attendance.checkOutTime);
-            workingHoursSpan.textContent = `${hours}h ${minutes}m`;
-            attendanceStatusSpan.textContent = attendance.status;
-            attendanceStatusSpan.className = `value status-${attendance.status.toLowerCase().replace(' ', '-')}`;
-            
-            btnCheckIn.disabled = true;
-            btnCheckOut.disabled = true;
-            showMessage('You have completed attendance for today', 'info');
-        } else {
-            btnCheckIn.disabled = true;
-            btnCheckOut.disabled = false;
-            attendanceStatusSpan.textContent = 'Checked In';
-            attendanceStatusSpan.className = 'value status-present';
-        }
-    } else {
-        btnCheckIn.disabled = false;
-        btnCheckOut.disabled = true;
-        checkInTimeSpan.textContent = '--:--';
-        checkOutTimeSpan.textContent = '--:--';
-        workingHoursSpan.textContent = '0h 0m';
-        attendanceStatusSpan.textContent = 'Not Marked';
-        attendanceStatusSpan.className = 'value status-pending';
-    }
+    // Enable both buttons - allow multiple check-ins/outs
+    btnCheckIn.disabled = false;
+    btnCheckOut.disabled = false;
 }
 
 function checkIn() {
@@ -322,25 +291,22 @@ function checkIn() {
     }
     
     const now = getCurrentDateTime();
-    const existing = getTodayAttendance(currentUser);
-    
-    if (existing) {
-        showMessage('You have already checked in today', 'error');
-        return;
-    }
     
     const attendanceRecord = {
         employeeId: currentUser,
         date: getDateString(now),
-        checkInTime: now.toISOString(),
-        checkOutTime: null,
+        time: now.toISOString(),
+        type: 'CHECK IN',
         status: getAttendanceStatus(now.toISOString()),
-        workingHours: null,
         location: userLocation,
         distance: locationDistance
     };
     
-    saveAttendance(currentUser, attendanceRecord);
+    // Save as new entry with timestamp
+    const data = getAttendanceData();
+    const key = `${currentUser}_${now.getTime()}`;
+    data[key] = attendanceRecord;
+    saveAttendanceData(data);
     simulateNotification('check-in', currentUser, now.toISOString());
     loadTodayAttendance();
     showMessage('✓ Check-In Successful!', 'success');
@@ -353,23 +319,22 @@ function checkOut() {
     }
     
     const now = getCurrentDateTime();
-    const existing = getTodayAttendance(currentUser);
     
-    if (!existing) {
-        showMessage('You must check in before checking out', 'error');
-        return;
-    }
+    const attendanceRecord = {
+        employeeId: currentUser,
+        date: getDateString(now),
+        time: now.toISOString(),
+        type: 'CHECK OUT',
+        status: 'Present',
+        location: userLocation,
+        distance: locationDistance
+    };
     
-    if (existing.checkOutTime) {
-        showMessage('You have already checked out today', 'error');
-        return;
-    }
-    
-    const { hours, minutes } = calculateWorkingHours(existing.checkInTime, now.toISOString());
-    existing.checkOutTime = now.toISOString();
-    existing.workingHours = `${hours}h ${minutes}m`;
-    
-    saveAttendance(currentUser, existing);
+    // Save as new entry with timestamp
+    const data = getAttendanceData();
+    const key = `${currentUser}_${now.getTime()}`;
+    data[key] = attendanceRecord;
+    saveAttendanceData(data);
     simulateNotification('check-out', currentUser, now.toISOString());
     loadTodayAttendance();
     showMessage('✓ Check-Out Successful!', 'success');
@@ -379,77 +344,109 @@ function checkOut() {
 // ADMIN PANEL
 // ============================================
 
-function showAdminPanel() {
-    dashboardScreen.classList.remove('active');
-    adminScreen.classList.add('active');
-    populateEmployeeFilter();
-    loadAllRecords();
-}
 
-function backToDashboard() {
-    adminScreen.classList.remove('active');
-    dashboardScreen.classList.add('active');
-    if (currentUser) loadTodayAttendance();
-}
 
-function populateEmployeeFilter() {
-    const records = getAllAttendanceRecords();
-    const employees = [...new Set(records.map(r => r.employeeId))];
-    
-    filterEmployee.innerHTML = '<option value="all">All Employees</option>';
-    employees.forEach(emp => {
-        const option = document.createElement('option');
-        option.value = emp;
-        option.textContent = emp;
-        filterEmployee.appendChild(option);
-    });
-}
+// ============================================
+// TABLE RENDERING
+// ============================================
 
-function loadAllRecords() {
-    const records = getAllAttendanceRecords();
-    const selectedEmployee = filterEmployee ? filterEmployee.value : 'all';
-    const selectedDate = filterDate ? filterDate.value : '';
+let currentFilter = 'daily';
+const attendanceTableBody = document.getElementById('attendanceTableBody');
+const summaryBabu = document.getElementById('summaryBabu');
+
+function renderAttendanceTable() {
+    const allRecords = getAllAttendanceRecords();
+    const filtered = filterByTimeline(allRecords, currentFilter);
     
-    let filteredRecords = records;
-    
-    if (selectedEmployee && selectedEmployee !== 'all') {
-        filteredRecords = filteredRecords.filter(r => r.employeeId === selectedEmployee);
-    }
-    
-    if (selectedDate) {
-        filteredRecords = filteredRecords.filter(r => r.date === selectedDate);
-    }
-    
-    filteredRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    if (filteredRecords.length === 0) {
-        recordsTableBody.innerHTML = '<tr><td colspan="6" class="no-records">No records found</td></tr>';
+    if (filtered.length === 0) {
+        attendanceTableBody.innerHTML = '<tr><td colspan="5" class="no-data">No attendance records found</td></tr>';
         return;
     }
     
-    recordsTableBody.innerHTML = filteredRecords.map(record => {
-        const checkIn = formatTime(new Date(record.checkInTime));
-        const checkOut = record.checkOutTime ? formatTime(new Date(record.checkOutTime)) : '--';
-        const hours = record.workingHours || '--';
-        const statusClass = record.status.toLowerCase().replace(' ', '-');
+    // Sort by time descending (newest first)
+    filtered.sort((a, b) => new Date(b.time) - new Date(a.time));
+    
+    attendanceTableBody.innerHTML = filtered.map(record => {
+        const time = formatTime(new Date(record.time));
+        const type = record.type || 'CHECK IN';
+        const status = record.status || 'Present';
+        const typeClass = type === 'CHECK IN' ? 'status-present' : 'status-out';
         
         return `
             <tr>
                 <td>${record.employeeId}</td>
-                <td>${new Date(record.date).toLocaleDateString('en-IN')}</td>
-                <td>${checkIn}</td>
-                <td>${checkOut}</td>
-                <td>${hours}</td>
-                <td><span class="status-badge ${statusClass}">${record.status}</span></td>
+                <td>${formatDate(new Date(record.date))}</td>
+                <td>${time}</td>
+                <td><span class="${typeClass}">${type}</span></td>
+                <td><span class="status-${status.toLowerCase().replace(' ', '-')}">${status}</span></td>
             </tr>
         `;
-    }).join('');
+    }).join('');;
+    
+    // Update summary - count total check-ins
+    const babuRecords = allRecords.filter(r => r.employeeId === 'Babu hussian' && r.type === 'CHECK IN');
+    if (summaryBabu) summaryBabu.textContent = `${babuRecords.length} check-ins`;
 }
 
-function clearFilters() {
-    if (filterEmployee) filterEmployee.value = 'all';
-    if (filterDate) filterDate.value = '';
-    loadAllRecords();
+function filterByTimeline(records, timeline) {
+    const now = getCurrentDateTime();
+    const today = getDateString(now);
+    
+    switch(timeline) {
+        case 'daily':
+            return records.filter(r => r.date === today);
+        
+        case 'weekly':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return records.filter(r => new Date(r.date) >= weekAgo);
+        
+        case 'monthly':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return records.filter(r => new Date(r.date) >= monthAgo);
+        
+        case 'yearly':
+            const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            return records.filter(r => new Date(r.date) >= yearAgo);
+        
+        default:
+            return records;
+    }
+}
+
+function setupFilterButtons() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-filter');
+            renderAttendanceTable();
+        });
+    });
+}
+
+function exportToExcel() {
+    const allRecords = getAllAttendanceRecords();
+    const filtered = filterByTimeline(allRecords, currentFilter);
+    
+    if (filtered.length === 0) {
+        showMessage('No data to export', 'error');
+        return;
+    }
+    
+    const data = filtered.map(record => ({
+        'Employee': record.employeeId,
+        'Date': record.date,
+        'Time': formatTime(new Date(record.time)),
+        'Type': record.type || 'CHECK IN',
+        'Status': record.status || 'Present'
+    }));
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.writeFile(wb, `attendance_${currentFilter}_${getDateString(getCurrentDateTime())}.xlsx`);
+    showMessage('✅ Excel file exported successfully!', 'success');
 }
 
 // ============================================
@@ -472,15 +469,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Check-in/out buttons
-    if (btnCheckIn) btnCheckIn.addEventListener('click', checkIn);
-    if (btnCheckOut) btnCheckOut.addEventListener('click', checkOut);
+    if (btnCheckIn) {
+        btnCheckIn.addEventListener('click', function() {
+            checkIn();
+            setTimeout(renderAttendanceTable, 500);
+        });
+    }
+    if (btnCheckOut) {
+        btnCheckOut.addEventListener('click', function() {
+            checkOut();
+            setTimeout(renderAttendanceTable, 500);
+        });
+    }
     
-    // Admin panel
-    if (btnAdminView) btnAdminView.addEventListener('click', showAdminPanel);
-    if (btnBackToDashboard) btnBackToDashboard.addEventListener('click', backToDashboard);
-    if (filterEmployee) filterEmployee.addEventListener('change', loadAllRecords);
-    if (filterDate) filterDate.addEventListener('change', loadAllRecords);
-    if (btnClearFilters) btnClearFilters.addEventListener('click', clearFilters);
+    // Setup filter buttons
+    setupFilterButtons();
+    
+    // Export button
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    if (btnExportExcel) btnExportExcel.addEventListener('click', exportToExcel);
+    
+    // Initial table render
+    renderAttendanceTable();
     
     console.log('✅ All event listeners attached');
     console.log('📌 Data stored in: Browser LocalStorage');

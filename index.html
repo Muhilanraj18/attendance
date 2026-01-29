@@ -14,13 +14,11 @@
     <div class="container">
         <!-- Header -->
         <header>
-            <h1>📍 Attendance Management System</h1>
-            <p class="subtitle">Geo-Fenced Attendance Tracker with Database Storage</p>
-            <p class="subtitle" style="font-size: 0.9em; opacity: 0.8;">💾 All data saved to IndexedDB database - Never gets erased!</p>
+            <h1>Attendance System</h1>
         </header>
 
         <!-- Location Status Banner -->
-        <div id="locationStatus" class="status-banner">
+        <div id="locationStatus" class="status-banner" style="display: none;">
             <span id="statusIcon">🔍</span>
             <span id="statusText">Checking location...</span>
         </div>
@@ -34,8 +32,7 @@
                 <label for="employeeSelect">Select Employee:</label>
                 <select id="employeeSelect" class="input-field">
                     <option value="">-- Select Employee --</option>
-                    <option value="John Doe">John Doe</option>
-                    <option value="Jane Smith">Jane Smith</option>
+                    <option value="Babu hussian">Babu hussian</option>
                 </select>
             </div>
 
@@ -49,10 +46,7 @@
                     <span class="label">Time:</span>
                     <span id="currentTime" class="value">--</span>
                 </div>
-                <div class="datetime-item">
-                    <span class="label">Distance:</span>
-                    <span id="distanceDisplay" class="value">--</span>
-                </div>
+
             </div>
 
             <!-- Attendance Buttons -->
@@ -83,12 +77,8 @@
 
             <!-- Export Buttons -->
             <div class="export-group">
-                <button id="btnExportCSV" class="btn-export">📄 Export CSV</button>
                 <button id="btnExportExcel" class="btn-export">📊 Export Excel</button>
-                <button id="btnBackupData" class="btn-export">💾 Backup Data</button>
-                <button id="btnRestoreData" class="btn-export">📥 Restore Data</button>
             </div>
-            <input type="file" id="fileRestore" accept=".json" style="display: none;">
 
             <!-- Attendance Table -->
             <div class="table-container">
@@ -97,15 +87,14 @@
                         <tr>
                             <th>Employee</th>
                             <th>Date</th>
-                            <th>IN Time</th>
-                            <th>OUT Time</th>
-                            <th>Distance (m)</th>
+                            <th>Time</th>
+                            <th>Type</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="attendanceTableBody">
                         <tr>
-                            <td colspan="6" class="no-data">No attendance records found</td>
+                            <td colspan="5" class="no-data">No attendance records found</td>
                         </tr>
                     </tbody>
                 </table>
@@ -116,12 +105,8 @@
                 <h3>Attendance Summary</h3>
                 <div class="summary-cards">
                     <div class="summary-card">
-                        <div class="card-label">John Doe</div>
-                        <div class="card-value" id="summaryJohn">0 days</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="card-label">Jane Smith</div>
-                        <div class="card-value" id="summaryJane">0 days</div>
+                        <div class="card-label">Babu hussian</div>
+                        <div class="card-value" id="summaryBabu">0 days</div>
                     </div>
                 </div>
             </div>
@@ -129,7 +114,7 @@
 
         <!-- Footer -->
         <footer>
-            <p>© 2026 Attendance Management System | Geo-Fencing Enabled 📍</p>
+            <p>2026crafted clipz | Designed by Inan Infinites</p>
         </footer>
     </div>
 
