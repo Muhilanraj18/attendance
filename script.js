@@ -10,9 +10,9 @@ const CONFIG = {
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
-        serviceId: 'service_xxxxxxx',  // Replace with your EmailJS Service ID
-        templateId: 'template_xxxxxxx', // Replace with your EmailJS Template ID
-        publicKey: 'YOUR_PUBLIC_KEY'    // Replace with your EmailJS Public Key
+        serviceId: 'service_46oqxif',  // EmailJS Service ID
+        templateId: 'template_fnkqy1l', // EmailJS Template ID
+        publicKey: 'kLSpBWg3gj_fdFDZV'    // EmailJS Public Key
     },
     whatsapp: {
         // Option 1: Twilio WhatsApp API
@@ -280,7 +280,21 @@ function sendEmail(type, employeeId, time) {
                 console.error('❌ Email failed to send:', error);
             });
     } else {
-        console.warn('⚠️ EmailJS not loaded. Email not sent.');
+        // Fallback: Open default email client (NO API NEEDED)
+        console.log('⚠️ EmailJS not configured. Opening email client...');
+        const subject = encodeURIComponent(`Attendance Alert - ${type.toUpperCase()}`);
+        const body = encodeURIComponent(
+            `Employee: ${employeeId}\n` +
+            `Action: ${type.toUpperCase()}\n` +
+            `Date: ${formatDate(new Date(time))}\n` +
+            `Time: ${formatTime(new Date(time))}\n` +
+            `Location: ${userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A'}\n` +
+            `Distance: ${locationDistance ? `${locationDistance.toFixed(2)}m from office` : 'N/A'}\n\n` +
+            `This is an automated notification from the Attendance System.`
+        );
+        
+        // Open email client with pre-filled content
+        window.open(`mailto:${CONFIG.notificationEmail}?subject=${subject}&body=${body}`, '_blank');
     }
 }
 
@@ -291,8 +305,11 @@ function sendEmail(type, employeeId, time) {
 function sendWhatsApp(type, employeeId, time) {
     const message = `*Attendance Alert*\n\nEmployee: ${employeeId}\nAction: ${type.toUpperCase()}\nDate: ${formatDate(new Date(time))}\nTime: ${formatTime(new Date(time))}\nLocation: ${userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A'}\nDistance: ${locationDistance ? `${locationDistance.toFixed(2)}m from office` : 'N/A'}`;
     
-    // Option 1: Twilio WhatsApp API (Recommended for production)
-    sendWhatsAppViaTwilio(message);
+    // Use WhatsApp Web URL (NO API NEEDED - Opens WhatsApp)
+    sendWhatsAppViaWebURL(message);
+    
+    // Option 1: Twilio WhatsApp API (Requires API - Commented out)
+    // sendWhatsAppViaTwilio(message);
     
     // Option 2: CallMeBot API (Free alternative - uncomment to use)
     // sendWhatsAppViaCallMeBot(message);
