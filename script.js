@@ -258,9 +258,9 @@ function simulateNotification(type, employeeId, time) {
 // ============================================
 
 function sendEmail(type, employeeId, time) {
-    // Initialize EmailJS if not already done
+    // Check if EmailJS is available
     if (typeof emailjs !== 'undefined') {
-        emailjs.init(CONFIG.emailjs.publicKey);
+        // Don't initialize again - already done on page load
         
         const templateParams = {
             employee_name: employeeId,
@@ -273,11 +273,19 @@ function sendEmail(type, employeeId, time) {
             distance: locationDistance ? `${locationDistance.toFixed(2)}m` : 'N/A'
         };
         
+        console.log('📧 Attempting to send email...');
+        console.log('📧 Template params:', templateParams);
+        console.log('📧 Service ID:', CONFIG.emailjs.serviceId);
+        console.log('📧 Template ID:', CONFIG.emailjs.templateId);
+        
         emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, templateParams)
             .then(function(response) {
                 console.log('✅ Email sent successfully!', response.status, response.text);
+                console.log('📬 Email delivered to:', CONFIG.notificationEmail);
             }, function(error) {
-                console.error('❌ Email failed to send:', error);
+                console.error('❌ Email failed to send!');
+                console.error('❌ Error:', error);
+                console.error('❌ Error text:', error.text);
             });
     } else {
         // Fallback: Open default email client (NO API NEEDED)
@@ -726,6 +734,14 @@ function clearAllData() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ System Initialized');
+    
+    // Initialize EmailJS
+    if (typeof emailjs !== 'undefined') {
+        emailjs.init(CONFIG.emailjs.publicKey);
+        console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
+    } else {
+        console.warn('⚠️ EmailJS library not loaded!');
+    }
     
     // Start date/time update
     updateDateTime();
