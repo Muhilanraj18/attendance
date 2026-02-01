@@ -636,6 +636,57 @@ function exportToExcel() {
     showMessage('✅ Excel file exported successfully!', 'success');
 }
 
+function clearAllData() {
+    // Ask for confirmation before deleting
+    const confirmation = confirm('⚠️ WARNING: This will permanently delete ALL attendance records!\n\nAre you sure you want to continue?');
+    
+    if (!confirmation) {
+        showMessage('❌ Data deletion cancelled', 'info');
+        return;
+    }
+    
+    // Double confirmation for safety
+    const doubleConfirm = confirm('🚨 FINAL CONFIRMATION\n\nThis action CANNOT be undone!\n\nClick OK to DELETE ALL DATA or Cancel to abort.');
+    
+    if (!doubleConfirm) {
+        showMessage('❌ Data deletion cancelled', 'info');
+        return;
+    }
+    
+    try {
+        // Clear all attendance data
+        localStorage.removeItem('attendanceData');
+        
+        // Clear notification log
+        localStorage.removeItem('notificationLog');
+        
+        // Clear any other stored data
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+            if (key.startsWith('attendance') || key.includes('employee')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        // Reset UI
+        renderAttendanceTable();
+        
+        // Show success message
+        showMessage('✅ All attendance data has been cleared successfully!', 'success');
+        
+        console.log('🗑️ All data cleared from LocalStorage');
+        
+        // Reload the page after 2 seconds to refresh everything
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Error clearing data:', error);
+        showMessage('❌ Error clearing data. Please try again.', 'error');
+    }
+}
+
 // ============================================
 // EVENT LISTENERS
 // ============================================
@@ -675,6 +726,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Export button
     const btnExportExcel = document.getElementById('btnExportExcel');
     if (btnExportExcel) btnExportExcel.addEventListener('click', exportToExcel);
+    
+    // Clear data button
+    const btnClearData = document.getElementById('btnClearData');
+    if (btnClearData) btnClearData.addEventListener('click', clearAllData);
     
     // Initial table render
     renderAttendanceTable();

@@ -458,6 +458,25 @@ header h1 {
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
+.btn-clear-data {
+    padding: 12px 25px;
+    border: none;
+    background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.btn-clear-data:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(244, 67, 54, 0.4);
+    background: linear-gradient(135deg, #d32f2f 0%, #c2185b 100%);
+}
+
 /* ===========================
    TABLE
    =========================== */
