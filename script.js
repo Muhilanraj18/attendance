@@ -637,7 +637,23 @@ function exportToExcel() {
 }
 
 function clearAllData() {
-    // Ask for confirmation before deleting
+    // Step 1: Ask for password
+    const password = prompt('🔐 Enter password to clear all data:');
+    
+    // Check if user cancelled
+    if (password === null) {
+        showMessage('❌ Data deletion cancelled', 'info');
+        return;
+    }
+    
+    // Verify password
+    if (password !== 'cc@123') {
+        showMessage('❌ Incorrect password! Access denied.', 'error');
+        console.log('❌ Failed password attempt');
+        return;
+    }
+    
+    // Step 2: Ask for confirmation before deleting
     const confirmation = confirm('⚠️ WARNING: This will permanently delete ALL attendance records!\n\nAre you sure you want to continue?');
     
     if (!confirmation) {
@@ -645,7 +661,7 @@ function clearAllData() {
         return;
     }
     
-    // Double confirmation for safety
+    // Step 3: Double confirmation for safety
     const doubleConfirm = confirm('🚨 FINAL CONFIRMATION\n\nThis action CANNOT be undone!\n\nClick OK to DELETE ALL DATA or Cancel to abort.');
     
     if (!doubleConfirm) {
