@@ -263,6 +263,133 @@ header h1 {
 }
 
 /* ===========================
+   WORK SCHEDULE SECTION
+   =========================== */
+.schedule-section {
+    padding: 40px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.schedule-section h2 {
+    font-size: 2em;
+    margin-bottom: 25px;
+    color: #667eea;
+    text-align: center;
+}
+
+.schedule-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.schedule-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.schedule-table th {
+    padding: 15px;
+    text-align: left;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.schedule-table th:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+.schedule-table th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.schedule-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.schedule-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+
+.schedule-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.time-cell {
+    padding: 15px;
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1em;
+    width: 40%;
+}
+
+.activity-cell {
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1em;
+}
+
+.activity-icon {
+    font-size: 1.5em;
+}
+
+.activity-text {
+    font-weight: 500;
+    color: #333;
+}
+
+.working-hours {
+    background-color: #e8f5e9;
+}
+
+.working-hours:hover {
+    background-color: #c8e6c9 !important;
+}
+
+.break-time {
+    background-color: #fff3e0;
+}
+
+.break-time:hover {
+    background-color: #ffe0b2 !important;
+}
+
+.schedule-summary {
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.schedule-summary p {
+    margin: 5px 0;
+    font-size: 1em;
+    color: #333;
+}
+
+.schedule-summary strong {
+    color: #667eea;
+}
+
+/* ===========================
    REPORTS SECTION
    =========================== */
 .reports-section {
@@ -471,8 +598,28 @@ footer {
     }
 
     .attendance-section,
+    .schedule-section,
     .reports-section {
         padding: 20px;
+    }
+
+    .schedule-container {
+        padding: 15px;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+
+    .activity-icon {
+        font-size: 1.2em;
+    }
+
+    .schedule-summary {
+        flex-direction: column;
+        gap: 10px;
     }
 
     .button-group {
@@ -513,6 +660,24 @@ footer {
 
     .subtitle {
         font-size: 0.95em;
+    }
+
+    .schedule-section h2 {
+        font-size: 1.5em;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 8px;
+        font-size: 0.85em;
+    }
+
+    .time-cell {
+        font-size: 0.85em;
+    }
+
+    .schedule-summary p {
+        font-size: 0.9em;
     }
 
     .btn {
