@@ -7,7 +7,7 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
-    officeLocation: { lat: 11.350178, lng: 77.718453 }, // Required location for check-in/out
+    officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
         serviceId: 'service_xxxxxxx',  // Replace with your EmailJS Service ID
@@ -199,7 +199,14 @@ function calculateDistance() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
     locationDistance = R * c;
-    console.log(`📍 Distance from office: ${locationDistance.toFixed(2)}m`);
+    
+    // Debug logging
+    console.log('📍 LOCATION DEBUG:');
+    console.log('   Office Location:', CONFIG.officeLocation);
+    console.log('   Your Location:', userLocation);
+    console.log(`   Distance from office: ${locationDistance.toFixed(2)}m`);
+    console.log(`   Allowed radius: ${CONFIG.allowedRadius}m`);
+    console.log(`   Status: ${locationDistance <= CONFIG.allowedRadius ? '✅ WITHIN RANGE' : '❌ OUT OF RANGE'}`);
 }
 
 // ============================================
