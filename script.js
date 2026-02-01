@@ -7,7 +7,8 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
-    officeLocation: { lat: 8.1848089, lng: 77.3948716 },
+    officeLocation: { lat: 11.350178, lng: 77.718453 }, // Required location for check-in/out
+    allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
         serviceId: 'service_xxxxxxx',  // Replace with your EmailJS Service ID
         templateId: 'template_xxxxxxx', // Replace with your EmailJS Template ID
@@ -146,20 +147,40 @@ function getLocation() {
                 };
                 calculateDistance();
                 if (locationStatusSpan) {
-                    locationStatusSpan.textContent = `✅ ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Located'}`;
+                    if (locationDistance !== null) {
+                        if (locationDistance <= CONFIG.allowedRadius) {
+                            locationStatusSpan.textContent = `✅ ${locationDistance.toFixed(0)}m from office (Within range)`;
+                            locationStatusSpan.style.backgroundColor = '#d4edda';
+                            locationStatusSpan.style.color = '#155724';
+                        } else {
+                            locationStatusSpan.textContent = `⚠️ ${locationDistance.toFixed(0)}m from office (Outside ${CONFIG.allowedRadius}m range)`;
+                            locationStatusSpan.style.backgroundColor = '#fff3cd';
+                            locationStatusSpan.style.color = '#856404';
+                        }
+                    } else {
+                        locationStatusSpan.textContent = '✅ Located';
+                    }
                 }
                 console.log('✅ Location captured:', userLocation);
             },
             (error) => {
                 console.warn('⚠️ Location access denied:', error.message);
-                if (locationStatusSpan) locationStatusSpan.textContent = '⚠️ Location denied';
+                if (locationStatusSpan) {
+                    locationStatusSpan.textContent = '⚠️ Location denied';
+                    locationStatusSpan.style.backgroundColor = '#f8d7da';
+                    locationStatusSpan.style.color = '#721c24';
+                }
                 userLocation = null;
                 locationDistance = null;
             }
         );
     } else {
         console.warn('⚠️ Geolocation not supported');
-        if (locationStatusSpan) locationStatusSpan.textContent = '❌ Not supported';
+        if (locationStatusSpan) {
+            locationStatusSpan.textContent = '❌ Not supported';
+            locationStatusSpan.style.backgroundColor = '#f8d7da';
+            locationStatusSpan.style.color = '#721c24';
+        }
     }
 }
 
@@ -425,6 +446,18 @@ function checkIn() {
         return;
     }
     
+    // Check if location is available
+    if (!userLocation) {
+        showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
+        return;
+    }
+    
+    // Check if user is within allowed radius
+    if (locationDistance > CONFIG.allowedRadius) {
+        showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check in.`, 'error');
+        return;
+    }
+    
     const now = getCurrentDateTime();
     
     const attendanceRecord = {
@@ -450,6 +483,18 @@ function checkIn() {
 function checkOut() {
     if (!currentUser) {
         showMessage('Please select your name first', 'error');
+        return;
+    }
+    
+    // Check if location is available
+    if (!userLocation) {
+        showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
+        return;
+    }
+    
+    // Check if user is within allowed radius
+    if (locationDistance > CONFIG.allowedRadius) {
+        showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check out.`, 'error');
         return;
     }
     
