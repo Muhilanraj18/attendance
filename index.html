@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Attendance Management System</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Attendance System</h1>
+        </header>
+
+        <!-- Location Status Banner -->
+        <div id="locationStatus" class="status-banner">
+            <span id="statusIcon">🔍</span>
+            <span id="statusText">Checking location...</span>
+        </div>
+
+        <!-- Attendance Form -->
+        <section class="attendance-section">
+            <h2>Mark Attendance</h2>
+            
+            <!-- Employee Selection -->
+            <div class="form-group">
+                <label for="employeeSelect">Select Employee:</label>
+                <select id="employeeSelect" class="input-field">
+                    <option value="">-- Select Employee --</option>
+                    <option value="SUTHA KT">SUTHA KT</option>
+                </select>
+            </div>
+
+            <!-- Current Date & Time Display -->
+            <div class="datetime-display">
+                <div class="datetime-item">
+                    <span class="label">Date:</span>
+                    <span id="currentDate" class="value">--</span>
+                </div>
+                <div class="datetime-item">
+                    <span class="label">Time:</span>
+                    <span id="currentTime" class="value">--</span>
+                </div>
+
+            </div>
+
+            <!-- Attendance Buttons -->
+            <div class="button-group">
+                <button id="btnCheckIn" class="btn btn-in" disabled>
+                    <span class="btn-icon">➡️</span> CHECK IN
+                </button>
+                <button id="btnCheckOut" class="btn btn-out" disabled>
+                    <span class="btn-icon">⬅️</span> CHECK OUT
+                </button>
+            </div>
+
+            <!-- Message Display -->
+            <div id="messageBox" class="message-box"></div>
+        </section>
+
+        <!-- Work Schedule Section -->
+        <section class="schedule-section">
+            <h2>📅 Work Schedule</h2>
+            <div class="schedule-container">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="working-hours">
+                            <td class="time-cell">9:30 AM - 12:30 PM</td>
+                            <td class="activity-cell">
+                                <span class="activity-icon">💼</span>
+                                <span class="activity-text">Working</span>
+                            </td>
+                        </tr>
+                        <tr class="break-time">
+                            <td class="time-cell">12:30 PM - 1:30 PM</td>
+                            <td class="activity-cell">
+                                <span class="activity-icon">🍽️</span>
+                                <span class="activity-text">Lunch Break</span>
+                            </td>
+                        </tr>
+                        <tr class="working-hours">
+                            <td class="time-cell">1:30 PM - 4:30 PM</td>
+                            <td class="activity-cell">
+                                <span class="activity-icon">💼</span>
+                                <span class="activity-text">Working</span>
+                            </td>
+                        </tr>
+                        <tr class="break-time">
+                            <td class="time-cell">4:30 PM - 5:00 PM</td>
+                            <td class="activity-cell">
+                                <span class="activity-icon">☕</span>
+                                <span class="activity-text">Break</span>
+                            </td>
+                        </tr>
+                        <tr class="working-hours">
+                            <td class="time-cell">5:00 PM - 9:00 PM</td>
+                            <td class="activity-cell">
+                                <span class="activity-icon">💼</span>
+                                <span class="activity-text">Working</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="schedule-summary">
+                    <p><strong>Total Working Hours:</strong> 9 hours</p>
+                    <p><strong>Total Break Time:</strong> 1.5 hours</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="reports-section">
+            <h2>Attendance Reports</h2>
+            
+            <!-- Timeline Filters -->
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="daily">Daily</button>
+                <button class="filter-btn" data-filter="weekly">Weekly</button>
+                <button class="filter-btn" data-filter="monthly">Monthly</button>
+                <button class="filter-btn" data-filter="yearly">Yearly</button>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="export-group">
+                <button id="btnExportExcel" class="btn-export">📊 Export Excel</button>
+                <button id="btnClearData" class="btn-clear-data">🗑️ Clear All Data</button>
+            </div>
+
+            <!-- Attendance Table -->
+            <div class="table-container">
+                <table id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        <tr>
+                            <td colspan="5" class="no-data">No attendance records found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="summary-section">
+                <h3>Attendance Summary</h3>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-label">SUTHA KT</div>
+                        <div class="card-value" id="summaryBabu">0 days</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>2026crafted clipz | Designed by Inan Infinites</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
