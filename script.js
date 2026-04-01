@@ -7,6 +7,7 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
+    enforceLocation: false, // Temporary: set true to re-enable coordinate restriction
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
@@ -96,6 +97,10 @@ function getAttendanceStatus(checkInTime) {
     } else {
         return 'Half Day';
     }
+}
+
+function isLocationEnforced() {
+    return CONFIG.enforceLocation === true;
 }
 
 // ============================================
@@ -639,16 +644,18 @@ async function checkIn() {
         return;
     }
     
-    // Check if location is available
-    if (!userLocation) {
-        showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
-        return;
-    }
-    
-    // Check if user is within allowed radius
-    if (locationDistance > CONFIG.allowedRadius) {
-        showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check in.`, 'error');
-        return;
+    if (isLocationEnforced()) {
+        // Check if location is available
+        if (!userLocation) {
+            showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
+            return;
+        }
+
+        // Check if user is within allowed radius
+        if (locationDistance > CONFIG.allowedRadius) {
+            showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check in.`, 'error');
+            return;
+        }
     }
     
     const now = getCurrentDateTime();
@@ -679,16 +686,18 @@ async function checkOut() {
         return;
     }
     
-    // Check if location is available
-    if (!userLocation) {
-        showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
-        return;
-    }
-    
-    // Check if user is within allowed radius
-    if (locationDistance > CONFIG.allowedRadius) {
-        showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check out.`, 'error');
-        return;
+    if (isLocationEnforced()) {
+        // Check if location is available
+        if (!userLocation) {
+            showMessage('❌ Location not detected. Please enable location services and refresh the page.', 'error');
+            return;
+        }
+
+        // Check if user is within allowed radius
+        if (locationDistance > CONFIG.allowedRadius) {
+            showMessage(`❌ You are ${locationDistance.toFixed(0)}m away from office. You must be within ${CONFIG.allowedRadius}m to check out.`, 'error');
+            return;
+        }
     }
     
     const now = getCurrentDateTime();
