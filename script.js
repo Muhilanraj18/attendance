@@ -7,6 +7,7 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
+    notifyViaWhatsApp: false,
     enforceLocation: false, // Temporary: set true to re-enable coordinate restriction
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
@@ -353,7 +354,6 @@ function simulateNotification(type, employeeId, time) {
     console.log(`Type: ${type.toUpperCase()}`);
     console.log(`Employee: ${employeeId}`);
     console.log(`Time: ${formatTime(new Date(time))}`);
-    console.log(`� Sending WhatsApp to: ${CONFIG.notificationPhone}`);
     console.log(`✉️ Sending Email to: ${CONFIG.notificationEmail}`);
     console.log('='.repeat(50));
     
@@ -364,7 +364,7 @@ function simulateNotification(type, employeeId, time) {
                 ? `✉️ Email: Sent to ${CONFIG.notificationEmail}`
                 : `✉️ Email: Failed (${emailResult.message})`;
 
-            const notifMsg = `✅ NOTIFICATION PROCESSED!\n💬 WhatsApp: Opened for ${CONFIG.notificationPhone}\n${emailLine}\n📍 ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Location captured'}`;
+            const notifMsg = `✅ NOTIFICATION PROCESSED!\n${emailLine}\n📍 ${locationDistance ? locationDistance.toFixed(0) + 'm from office' : 'Location captured'}`;
             showNotificationMessage(notifMsg, emailResult.success ? 'success' : 'error');
 
             const notifications = JSON.parse(localStorage.getItem('notificationLog') || '[]');
@@ -380,9 +380,10 @@ function simulateNotification(type, employeeId, time) {
             console.error('❌ Unexpected notification error:', error);
             showNotificationMessage('❌ Notification failed unexpectedly. Check browser console for details.', 'error');
         });
-    
-    // Send WhatsApp Message
-    sendWhatsApp(type, employeeId, time);
+
+    if (CONFIG.notifyViaWhatsApp) {
+        sendWhatsApp(type, employeeId, time);
+    }
     
     return message;
 }
@@ -968,5 +969,5 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ All event listeners attached');
     console.log('📌 Data storage: LocalStorage + Optional Firebase Realtime DB');
-    console.log('📌 Notifications to: ' + CONFIG.notificationPhone + ' & ' + CONFIG.notificationEmail);
+    console.log('📌 Notifications to Email: ' + CONFIG.notificationEmail);
 });
