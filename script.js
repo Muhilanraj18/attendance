@@ -389,88 +389,69 @@ function simulateNotification(type, employeeId, time) {
 }
 
 // ============================================
-// EMAIL SENDING (EmailJS)
+// EMAIL SENDING (Backend API)
 // ============================================
 
 function sendEmail(type, employeeId, time) {
-    // Check if EmailJS is available
-    if (typeof emailjs !== 'undefined') {
-        // Don't initialize again - already done on page load
-        
-        const templateParams = {
-            employee_name: employeeId,
-            action: type.toUpperCase(),
-            date: formatDate(new Date(time)),
-            time: formatTime(new Date(time)),
-            phone: CONFIG.notificationPhone,
-            email: CONFIG.notificationEmail,
-            location: userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A',
-            distance: locationDistance ? `${locationDistance.toFixed(2)}m` : 'N/A'
-        };
-        
-        console.log('📧 Attempting to send email...');
-        console.log('📧 Template params:', templateParams);
-        console.log('📧 Service ID:', CONFIG.emailjs.serviceId);
-        console.log('📧 Template ID:', CONFIG.emailjs.templateId);
-        
-        return emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, templateParams)
-            .then(function(response) {
-                console.log('✅ Email sent successfully!', response.status, response.text);
-                console.log('📬 Email delivered to:', CONFIG.notificationEmail);
-                return {
-                    success: true,
-                    status: response.status,
-                    text: response.text,
-                    message: 'Email sent'
-                };
-            })
-            .catch(function(error) {
-                console.error('❌ Email failed to send!');
-                console.error('❌ Error:', error);
-                console.error('❌ Error text:', error && error.text ? error.text : 'Unknown error');
+    const emailData = {
+        employee_name: employeeId,
+        action: type.toUpperCase(),
+        date: formatDate(new Date(time)),
+        time: formatTime(new Date(time)),
+        phone: CONFIG.notificationPhone,
+        email: CONFIG.notificationEmail,
+        location: userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A',
+        distance: locationDistance ? `${locationDistance.toFixed(2)}m` : 'N/A'
+    };
 
-                const errorText = (error && (error.text || error.message) ? (error.text || error.message) : 'Unknown EmailJS error').toString();
-                let friendlyMessage = 'Email service error';
+    console.log('📧 Attempting to send email via backend...');
+    console.log('📧 Email data:', emailData);
 
-                if (/service|gmail|provider|unstable|stopped/i.test(errorText)) {
-                    friendlyMessage = 'Email service disconnected. Reconnect Gmail in EmailJS dashboard';
-                } else if (/limit|quota|429/i.test(errorText)) {
-                    friendlyMessage = 'EmailJS quota/rate limit reached';
-                } else if (/public key|user id|forbidden|401|403/i.test(errorText)) {
-                    friendlyMessage = 'Invalid EmailJS public key or blocked request';
-                } else if (/template/i.test(errorText)) {
-                    friendlyMessage = 'Template configuration issue in EmailJS';
-                }
+    // Use http:// for local development, https:// for production
+    const apiUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://your-production-domain.com/api/send-email'
+        : 'http://localhost:3000/api/send-email';
 
-                return {
-                    success: false,
-                    text: errorText,
-                    message: friendlyMessage
-                };
-            });
-    } else {
-        // Fallback: Open default email client (NO API NEEDED)
-        console.log('⚠️ EmailJS not configured. Opening email client...');
-        const subject = encodeURIComponent(`Attendance Alert - ${type.toUpperCase()}`);
-        const body = encodeURIComponent(
-            `Employee: ${employeeId}\n` +
-            `Action: ${type.toUpperCase()}\n` +
-            `Date: ${formatDate(new Date(time))}\n` +
-            `Time: ${formatTime(new Date(time))}\n` +
-            `Location: ${userLocation ? `${userLocation.lat}, ${userLocation.lng}` : 'N/A'}\n` +
-            `Distance: ${locationDistance ? `${locationDistance.toFixed(2)}m from office` : 'N/A'}\n\n` +
-            `This is an automated notification from the Attendance System.`
-        );
-        
-        // Open email client with pre-filled content
-        window.open(`mailto:${CONFIG.notificationEmail}?subject=${subject}&body=${body}`, '_blank');
+    return fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Email sent successfully!');
+            console.log('📬 Email delivered to:', CONFIG.notificationEmail);
+            return {
+                success: true,
+                message: data.message
+            };
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('❌ Email failed to send!');
+        console.error('❌ Error:', error.message);
 
-        return Promise.resolve({
+        let friendlyMessage = 'Email service error';
+
+        if (/network|connect|localhost|3000/i.test(error.message)) {
+            friendlyMessage = 'Backend server not running. Start with: npm start';
+        } else if (/timeout/i.test(error.message)) {
+            friendlyMessage = 'Email server timeout. Check your connection.';
+        } else if (/configuration|password|credentials/i.test(error.message)) {
+            friendlyMessage = 'Email configuration error. Check .env file.';
+        }
+
+        return {
             success: false,
-            text: 'EmailJS library not loaded',
-            message: 'EmailJS not loaded in browser'
-        });
-    }
+            message: friendlyMessage,
+            error: error.message
+        };
+    });
 }
 
 // ============================================
