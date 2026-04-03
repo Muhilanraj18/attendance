@@ -7,7 +7,7 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
-    notifyViaWhatsApp: false,
+    notifyViaWhatsApp: true,
     enforceLocation: false, // Temporary: set true to re-enable coordinate restriction
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
@@ -339,7 +339,8 @@ function calculateDistance() {
 // NOTIFICATION SIMULATION
 // ============================================
 
-function simulateNotification(type, employeeId, time) {
+function simulateNotification(type, employeeId, time, options = {}) {
+    const { sendWhatsAppMessage = true } = options;
     const message = {
         type: type,
         employee: employeeId,
@@ -381,7 +382,7 @@ function simulateNotification(type, employeeId, time) {
             showNotificationMessage('❌ Notification failed unexpectedly. Check browser console for details.', 'error');
         });
 
-    if (CONFIG.notifyViaWhatsApp) {
+    if (CONFIG.notifyViaWhatsApp && sendWhatsAppMessage) {
         sendWhatsApp(type, employeeId, time);
     }
     
@@ -633,6 +634,11 @@ async function checkIn() {
         location: userLocation,
         distance: locationDistance
     };
+
+    // Open WhatsApp from the direct click flow so popup blockers do not block it.
+    if (CONFIG.notifyViaWhatsApp) {
+        sendWhatsApp('check-in', currentUser, now.toISOString());
+    }
     
     // Save as new entry with timestamp
     const data = getAttendanceData();
@@ -643,7 +649,7 @@ async function checkIn() {
     await saveAttendanceData(data, key, attendanceRecord);
     console.log('✅ Check-in saved. Current cache:', attendanceCache);
     
-    simulateNotification('check-in', currentUser, now.toISOString());
+    simulateNotification('check-in', currentUser, now.toISOString(), { sendWhatsAppMessage: false });
     
     // Force render table refresh after a short delay
     setTimeout(() => {
@@ -685,6 +691,11 @@ async function checkOut() {
         location: userLocation,
         distance: locationDistance
     };
+
+    // Open WhatsApp from the direct click flow so popup blockers do not block it.
+    if (CONFIG.notifyViaWhatsApp) {
+        sendWhatsApp('check-out', currentUser, now.toISOString());
+    }
     
     // Save as new entry with timestamp
     const data = getAttendanceData();
@@ -695,7 +706,7 @@ async function checkOut() {
     await saveAttendanceData(data, key, attendanceRecord);
     console.log('✅ Check-out saved. Current cache:', attendanceCache);
     
-    simulateNotification('check-out', currentUser, now.toISOString());
+    simulateNotification('check-out', currentUser, now.toISOString(), { sendWhatsAppMessage: false });
     
     // Force render table refresh after a short delay
     setTimeout(() => {
