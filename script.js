@@ -638,9 +638,18 @@ async function checkIn() {
     const data = getAttendanceData();
     const key = `${currentUser}_${now.getTime()}`;
     data[key] = attendanceRecord;
+    
+    console.log('💾 Saving check-in record:', { key, attendanceRecord });
     await saveAttendanceData(data, key, attendanceRecord);
+    console.log('✅ Check-in saved. Current cache:', attendanceCache);
+    
     simulateNotification('check-in', currentUser, now.toISOString());
-    loadTodayAttendance();
+    
+    // Force render table refresh
+    setTimeout(() => {
+        renderAttendanceTable();
+    }, 500);
+    
     showMessage('✓ Check-In Successful!', 'success');
 }
 
@@ -680,9 +689,18 @@ async function checkOut() {
     const data = getAttendanceData();
     const key = `${currentUser}_${now.getTime()}`;
     data[key] = attendanceRecord;
+    
+    console.log('💾 Saving check-out record:', { key, attendanceRecord });
     await saveAttendanceData(data, key, attendanceRecord);
+    console.log('✅ Check-out saved. Current cache:', attendanceCache);
+    
     simulateNotification('check-out', currentUser, now.toISOString());
-    loadTodayAttendance();
+    
+    // Force render table refresh
+    setTimeout(() => {
+        renderAttendanceTable();
+    }, 500);
+    
     showMessage('✓ Check-Out Successful!', 'success');
 }
 
@@ -701,8 +719,15 @@ const attendanceTableBody = document.getElementById('attendanceTableBody');
 const summaryBabu = document.getElementById('summaryBabu');
 
 function renderAttendanceTable() {
+    if (!attendanceTableBody) {
+        console.warn('⚠️ Attendance table element not found');
+        return;
+    }
+    
     const allRecords = getAllAttendanceRecords();
+    console.log('📊 All attendance records:', allRecords);
     const filtered = filterByTimeline(allRecords, currentFilter);
+    console.log('📊 Filtered records (', currentFilter, '):', filtered);
     
     if (filtered.length === 0) {
         attendanceTableBody.innerHTML = '<tr><td colspan="5" class="no-data">No attendance records found</td></tr>';
