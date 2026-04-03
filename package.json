@@ -1,5 +1,6 @@
 {
   "name": "attendance-system-backend",
+  "homepage": "https://muhilanraj18.github.io/attendance/",
   "version": "1.0.0",
   "description": "Email backend for Employee Attendance System",
   "main": "server.js",

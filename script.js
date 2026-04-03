@@ -17,7 +17,7 @@ const CONFIG = {
         publicKey: 'kLSpBWg3gj_fdFDZV'    // EmailJS Public Key
     },
     firebase: {
-        databaseUrl: '', // Example: https://your-project-id-default-rtdb.asia-southeast1.firebasedatabase.app
+        databaseUrl: 'https://attendance-system-3e84f-default-rtdb.firebaseio.com/',
         attendancePath: 'attendanceData',
         notificationPath: 'notificationLog'
     },
