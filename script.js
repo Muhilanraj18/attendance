@@ -889,13 +889,7 @@ async function clearAllData() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ System Initialized');
     
-    // Initialize EmailJS
-    if (typeof emailjs !== 'undefined') {
-        emailjs.init(CONFIG.emailjs.publicKey);
-        console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
-    } else {
-        console.warn('⚠️ EmailJS library not loaded!');
-    }
+    // Note: Email sending now uses SendGrid backend, not EmailJS
     
     // Start date/time update
     updateDateTime();
