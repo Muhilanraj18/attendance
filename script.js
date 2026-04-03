@@ -404,54 +404,36 @@ function sendEmail(type, employeeId, time) {
         distance: locationDistance ? `${locationDistance.toFixed(2)}m` : 'N/A'
     };
 
-    console.log('📧 Attempting to send email via backend...');
+    console.log('📧 Attempting to send email via EmailJS...');
     console.log('📧 Email data:', emailData);
 
-    // Use the current origin when served by the backend, otherwise fall back to localhost.
-    const apiUrl = window.location.protocol === 'file:'
-        ? 'http://localhost:3000/api/send-email'
-        : `${window.location.origin}/api/send-email`;
-
-    return fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    return emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, emailData)
+        .then(response => {
             console.log('✅ Email sent successfully!');
             console.log('📬 Email delivered to:', CONFIG.notificationEmail);
             return {
                 success: true,
-                message: data.message
+                message: 'Email sent successfully'
             };
-        } else {
-            throw new Error(data.message);
-        }
-    })
-    .catch(error => {
-        console.error('❌ Email failed to send!');
-        console.error('❌ Error:', error.message);
+        })
+        .catch(error => {
+            console.error('❌ Email failed to send!');
+            console.error('❌ Error:', error.message);
 
-        let friendlyMessage = 'Email service error';
+            let friendlyMessage = 'Email service error';
 
-        if (/network|connect|localhost|3000/i.test(error.message)) {
-            friendlyMessage = 'Backend server not running. Start with: npm start';
-        } else if (/timeout/i.test(error.message)) {
-            friendlyMessage = 'Email server timeout. Check your connection.';
-        } else if (/configuration|password|credentials/i.test(error.message)) {
-            friendlyMessage = 'Email configuration error. Check .env file.';
-        }
+            if (/EmailJS|service|template/i.test(error.message)) {
+                friendlyMessage = 'EmailJS configuration error. Check SERVICE_ID and TEMPLATE_ID in config.';
+            } else if (/validation/i.test(error.message)) {
+                friendlyMessage = 'EmailJS validation error. Check your settings.';
+            }
 
-        return {
-            success: false,
-            message: friendlyMessage,
-            error: error.message
-        };
-    });
+            return {
+                success: false,
+                message: friendlyMessage,
+                error: error.message
+            };
+        });
 }
 
 // ============================================
@@ -889,7 +871,13 @@ async function clearAllData() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ System Initialized');
     
-    // Note: Email sending now uses SendGrid backend, not EmailJS
+    // Initialize EmailJS
+    if (typeof emailjs !== 'undefined') {
+        emailjs.init(CONFIG.emailjs.publicKey);
+        console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
+    } else {
+        console.warn('⚠️ EmailJS library not loaded! Make sure to add the EmailJS script to HTML.');
+    }
     
     // Start date/time update
     updateDateTime();
