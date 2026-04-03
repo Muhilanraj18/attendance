@@ -645,10 +645,11 @@ async function checkIn() {
     
     simulateNotification('check-in', currentUser, now.toISOString());
     
-    // Force render table refresh
+    // Force render table refresh after a short delay
     setTimeout(() => {
+        console.log('🔄 Rendering table after check-in...');
         renderAttendanceTable();
-    }, 500);
+    }, 1000);
     
     showMessage('✓ Check-In Successful!', 'success');
 }
@@ -696,10 +697,11 @@ async function checkOut() {
     
     simulateNotification('check-out', currentUser, now.toISOString());
     
-    // Force render table refresh
+    // Force render table refresh after a short delay
     setTimeout(() => {
+        console.log('🔄 Rendering table after check-out...');
         renderAttendanceTable();
-    }, 500);
+    }, 1000);
     
     showMessage('✓ Check-Out Successful!', 'success');
 }
@@ -723,6 +725,10 @@ function renderAttendanceTable() {
         console.warn('⚠️ Attendance table element not found');
         return;
     }
+    
+    // Always reload from localStorage to ensure fresh data
+    attendanceCache = getLocalAttendanceData();
+    console.log('🔄 Reloaded cache from localStorage:', attendanceCache);
     
     const allRecords = getAllAttendanceRecords();
     console.log('📊 All attendance records:', allRecords);
