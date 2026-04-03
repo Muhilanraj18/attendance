@@ -407,10 +407,10 @@ function sendEmail(type, employeeId, time) {
     console.log('📧 Attempting to send email via backend...');
     console.log('📧 Email data:', emailData);
 
-    // Use http:// for local development, https:// for production
-    const apiUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://your-production-domain.com/api/send-email'
-        : 'http://localhost:3000/api/send-email';
+    // Use the current origin when served by the backend, otherwise fall back to localhost.
+    const apiUrl = window.location.protocol === 'file:'
+        ? 'http://localhost:3000/api/send-email'
+        : `${window.location.origin}/api/send-email`;
 
     return fetch(apiUrl, {
         method: 'POST',

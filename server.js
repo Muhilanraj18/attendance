@@ -114,10 +114,17 @@ app.post('/api/send-email', async (req, res) => {
         });
 
     } catch (error) {
+        const statusCode = error?.code || error?.response?.statusCode || 'unknown';
+        const responseBody = error?.response?.body ? JSON.stringify(error.response.body) : 'no response body';
+
         console.error('❌ Email sending error:', error.message);
+        console.error('❌ SendGrid status:', statusCode);
+        console.error('❌ SendGrid response:', responseBody);
+
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to send email'
+            message: error.message || 'Failed to send email',
+            details: responseBody
         });
     }
 });
