@@ -8,7 +8,7 @@ const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
     notifyViaWhatsApp: true,
-    enforceLocation: false, // Temporary: set true to re-enable coordinate restriction
+    enforceLocation: true, // Enforce coordinate restriction for check-in/check-out
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
