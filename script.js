@@ -20,15 +20,6 @@ const CONFIG = {
         databaseUrl: 'https://attendance-system-3e84f-default-rtdb.firebaseio.com/',
         attendancePath: 'attendanceData',
         notificationPath: 'notificationLog'
-    },
-    whatsapp: {
-        // Option 1: Twilio WhatsApp API
-        twilioAccountSid: 'YOUR_TWILIO_ACCOUNT_SID',
-        twilioAuthToken: 'YOUR_TWILIO_AUTH_TOKEN',
-        twilioWhatsAppNumber: 'whatsapp:+14155238886', // Twilio WhatsApp number
-        
-        // Option 2: CallMeBot API (Free - no signup needed)
-        callMeBotApiKey: 'YOUR_CALLMEBOT_API_KEY' // Get from calling bot
     }
 };
 
@@ -78,13 +69,6 @@ function getTimeString(date) {
 
 function getDateString(date) {
     return date.toISOString().split('T')[0];
-}
-
-function calculateWorkingHours(checkInTime, checkOutTime) {
-    const diff = new Date(checkOutTime) - new Date(checkInTime);
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return { hours, minutes, total: diff };
 }
 
 function getAttendanceStatus(checkInTime) {
@@ -231,24 +215,6 @@ async function saveAttendanceData(data, key, record) {
     }
 }
 
-function getTodayKey(employeeId) {
-    const today = getDateString(getCurrentDateTime());
-    return `${employeeId}_${today}`;
-}
-
-function getTodayAttendance(employeeId) {
-    const data = getAttendanceData();
-    const key = getTodayKey(employeeId);
-    return data[key] || null;
-}
-
-function saveAttendance(employeeId, attendanceRecord) {
-    const data = getAttendanceData();
-    const key = getTodayKey(employeeId);
-    data[key] = attendanceRecord;
-    saveAttendanceData(data);
-}
-
 function getAllAttendanceRecords() {
     const data = getAttendanceData();
     return Object.entries(data).map(([key, value]) => ({
@@ -390,7 +356,7 @@ function simulateNotification(type, employeeId, time, options = {}) {
 }
 
 // ============================================
-// EMAIL SENDING (Backend API)
+// EMAIL SENDING (EmailJS)
 // ============================================
 
 function sendEmail(type, employeeId, time) {
@@ -408,8 +374,16 @@ function sendEmail(type, employeeId, time) {
     console.log('📧 Attempting to send email via EmailJS...');
     console.log('📧 Email data:', emailData);
 
+    if (typeof emailjs === 'undefined') {
+        return Promise.resolve({
+            success: false,
+            message: 'EmailJS library not loaded',
+            error: 'emailjs is undefined'
+        });
+    }
+
     return emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, emailData)
-        .then(response => {
+        .then(() => {
             console.log('✅ Email sent successfully!');
             console.log('📬 Email delivered to:', CONFIG.notificationEmail);
             return {
@@ -446,75 +420,6 @@ function sendWhatsApp(type, employeeId, time) {
     
     // Use WhatsApp Web URL (NO API NEEDED - Opens WhatsApp)
     sendWhatsAppViaWebURL(message);
-    
-    // Option 1: Twilio WhatsApp API (Requires API - Commented out)
-    // sendWhatsAppViaTwilio(message);
-    
-    // Option 2: CallMeBot API (Free alternative - uncomment to use)
-    // sendWhatsAppViaCallMeBot(message);
-}
-
-// Method 1: Twilio WhatsApp API
-function sendWhatsAppViaTwilio(message) {
-    const accountSid = CONFIG.whatsapp.twilioAccountSid;
-    const authToken = CONFIG.whatsapp.twilioAuthToken;
-    const fromNumber = CONFIG.whatsapp.twilioWhatsAppNumber;
-    const toNumber = `whatsapp:${CONFIG.notificationPhone}`;
-    
-    if (accountSid === 'YOUR_TWILIO_ACCOUNT_SID') {
-        console.warn('⚠️ Twilio not configured. Set up Twilio WhatsApp API to enable WhatsApp messages.');
-        return;
-    }
-    
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    const auth = btoa(`${accountSid}:${authToken}`);
-    
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-            'From': fromNumber,
-            'To': toNumber,
-            'Body': message
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.sid) {
-            console.log('✅ WhatsApp message sent successfully via Twilio!');
-        } else {
-            console.error('❌ WhatsApp failed:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('❌ Twilio API error:', error);
-    });
-}
-
-// Method 2: CallMeBot API (Free - No signup needed)
-function sendWhatsAppViaCallMeBot(message) {
-    const apiKey = CONFIG.whatsapp.callMeBotApiKey;
-    const phone = CONFIG.notificationPhone.replace('+', '');
-    
-    if (apiKey === 'YOUR_CALLMEBOT_API_KEY') {
-        console.warn('⚠️ CallMeBot not configured. Follow setup guide to enable WhatsApp.');
-        return;
-    }
-    
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
-    
-    fetch(url)
-    .then(response => response.text())
-    .then(data => {
-        console.log('✅ WhatsApp message sent successfully via CallMeBot!');
-    })
-    .catch(error => {
-        console.error('❌ CallMeBot API error:', error);
-        console.log('⚠️ Make sure you have registered your phone number with CallMeBot');
-    });
 }
 
 // Method 3: WhatsApp Web URL (Opens WhatsApp - requires user click)
@@ -912,7 +817,7 @@ async function clearAllData() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ System Initialized');
-    
+
     // Initialize EmailJS
     if (typeof emailjs !== 'undefined') {
         emailjs.init(CONFIG.emailjs.publicKey);

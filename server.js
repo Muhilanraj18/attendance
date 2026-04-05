@@ -25,7 +25,8 @@ app.use(express.static(path.join(__dirname)));
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDER_EMAIL = process.env.SENDER_EMAIL || 'noreply@craftedclipz.in';
+const REQUIRED_EMAIL = 'info@craftedclipz.in';
+const SENDER_EMAIL = REQUIRED_EMAIL;
 
 if (SENDGRID_API_KEY) {
     sgMail.setApiKey(SENDGRID_API_KEY);
@@ -57,6 +58,9 @@ app.post('/api/send-email', async (req, res) => {
             location = 'N/A',
             distance = 'N/A'
         } = req.body;
+
+        // Always notify the official attendance inbox.
+        const recipientEmail = REQUIRED_EMAIL;
 
         // Validate required fields
         if (!employee_name || !action || !date || !time) {
@@ -95,7 +99,7 @@ app.post('/api/send-email', async (req, res) => {
 
         // Send email via SendGrid
         const msg = {
-            to: email,
+            to: recipientEmail,
             from: SENDER_EMAIL,
             subject: `🔔 Attendance Alert - ${action.toUpperCase()}`,
             html: emailContent
@@ -103,13 +107,13 @@ app.post('/api/send-email', async (req, res) => {
 
         const result = await sgMail.send(msg);
 
-        console.log(`✅ Email sent to ${email}`);
+        console.log(`✅ Email sent to ${recipientEmail}`);
         console.log(`   Employee: ${employee_name}`);
         console.log(`   Action: ${action}`);
 
         res.json({
             success: true,
-            message: `Email sent successfully to ${email}`,
+            message: `Email sent successfully to ${recipientEmail}`,
             messageId: result[0].headers['x-message-id']
         });
 
@@ -153,5 +157,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on: http://localhost:${PORT}`);
     console.log(`📧 Frontend: http://localhost:${PORT}/index.html`);
     console.log(`🔌 API: http://localhost:${PORT}/api/send-email`);
+    console.log(`📮 Recipient inbox: ${REQUIRED_EMAIL}`);
+    console.log(`📤 Sender email: ${SENDER_EMAIL}`);
     console.log('');
 });
