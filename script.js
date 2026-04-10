@@ -9,7 +9,7 @@ const CONFIG = {
     notificationEmail: 'info@craftedclipz.in',
     useEmailJs: true,
     notifyViaWhatsApp: true,
-    enforceLocation: false, // Disabled for testing: allow check-in/check-out from any location
+    enforceLocation: true, // Disabled for testing: allow check-in/check-out from any location
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
