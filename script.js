@@ -8,13 +8,13 @@ const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
     notifyViaWhatsApp: true,
-    enforceLocation: true, // Disabled for testing: allow check-in/check-out from any location
+    enforceLocation: false, // Disabled for testing: allow check-in/check-out from any location
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
     allowedRadius: 50, // Maximum distance in meters from office location
     emailjs: {
-        serviceId: 'service_46oqxif',  // EmailJS Service ID
-        templateId: 'template_fnkqy1l', // EmailJS Template ID
-        publicKey: 'kLSpBWg3gj_fdFDZV'    // EmailJS Public Key
+        serviceId: 'service_jcjlyfl',  // EmailJS Service ID
+        templateId: 'template_6t1ogix', // EmailJS Template ID
+        publicKey: 'Pf1GrPHz8A3CXVZW0'    // EmailJS Public Key
     },
     firebase: {
         databaseUrl: 'https://attendance-system-3e84f-default-rtdb.firebaseio.com/',
@@ -28,6 +28,7 @@ let currentUser = null;
 let userLocation = null;
 let locationDistance = null;
 let attendanceCache = {};
+let emailJsLoadPromise = null;
 
 // DOM Elements
 const employeeSelect = document.getElementById('employeeSelect');
@@ -37,6 +38,8 @@ const btnCheckIn = document.getElementById('btnCheckIn');
 const btnCheckOut = document.getElementById('btnCheckOut');
 const messageBox = document.getElementById('messageBox');
 const locationStatusSpan = document.getElementById('locationStatus');
+
+const EMAILJS_CDN_URL = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -229,51 +232,56 @@ function getAllAttendanceRecords() {
 
 function getLocation() {
     if (locationStatusSpan) locationStatusSpan.textContent = '📍 Detecting...';
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                calculateDistance();
-                if (locationStatusSpan) {
-                    if (locationDistance !== null) {
-                        if (locationDistance <= CONFIG.allowedRadius) {
-                            locationStatusSpan.textContent = `✅ ${locationDistance.toFixed(0)}m from office (Within range)`;
-                            locationStatusSpan.style.backgroundColor = '#d4edda';
-                            locationStatusSpan.style.color = '#155724';
+
+    return new Promise((resolve) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    calculateDistance();
+                    if (locationStatusSpan) {
+                        if (locationDistance !== null) {
+                            if (locationDistance <= CONFIG.allowedRadius) {
+                                locationStatusSpan.textContent = `✅ ${locationDistance.toFixed(0)}m from office (Within range)`;
+                                locationStatusSpan.style.backgroundColor = '#d4edda';
+                                locationStatusSpan.style.color = '#155724';
+                            } else {
+                                locationStatusSpan.textContent = `⚠️ ${locationDistance.toFixed(0)}m from office (Outside ${CONFIG.allowedRadius}m range)`;
+                                locationStatusSpan.style.backgroundColor = '#fff3cd';
+                                locationStatusSpan.style.color = '#856404';
+                            }
                         } else {
-                            locationStatusSpan.textContent = `⚠️ ${locationDistance.toFixed(0)}m from office (Outside ${CONFIG.allowedRadius}m range)`;
-                            locationStatusSpan.style.backgroundColor = '#fff3cd';
-                            locationStatusSpan.style.color = '#856404';
+                            locationStatusSpan.textContent = '✅ Located';
                         }
-                    } else {
-                        locationStatusSpan.textContent = '✅ Located';
                     }
+                    console.log('✅ Location captured:', userLocation);
+                    resolve(userLocation);
+                },
+                (error) => {
+                    console.warn('⚠️ Location access denied:', error.message);
+                    if (locationStatusSpan) {
+                        locationStatusSpan.textContent = '⚠️ Location denied';
+                        locationStatusSpan.style.backgroundColor = '#f8d7da';
+                        locationStatusSpan.style.color = '#721c24';
+                    }
+                    userLocation = null;
+                    locationDistance = null;
+                    resolve(null);
                 }
-                console.log('✅ Location captured:', userLocation);
-            },
-            (error) => {
-                console.warn('⚠️ Location access denied:', error.message);
-                if (locationStatusSpan) {
-                    locationStatusSpan.textContent = '⚠️ Location denied';
-                    locationStatusSpan.style.backgroundColor = '#f8d7da';
-                    locationStatusSpan.style.color = '#721c24';
-                }
-                userLocation = null;
-                locationDistance = null;
+            );
+        } else {
+            console.warn('⚠️ Geolocation not supported');
+            if (locationStatusSpan) {
+                locationStatusSpan.textContent = '❌ Not supported';
+                locationStatusSpan.style.backgroundColor = '#f8d7da';
+                locationStatusSpan.style.color = '#721c24';
             }
-        );
-    } else {
-        console.warn('⚠️ Geolocation not supported');
-        if (locationStatusSpan) {
-            locationStatusSpan.textContent = '❌ Not supported';
-            locationStatusSpan.style.backgroundColor = '#f8d7da';
-            locationStatusSpan.style.color = '#721c24';
+            resolve(null);
         }
-    }
+    });
 }
 
 function calculateDistance() {
@@ -359,6 +367,38 @@ function simulateNotification(type, employeeId, time, options = {}) {
 // EMAIL SENDING (EmailJS)
 // ============================================
 
+function ensureEmailJsLoaded() {
+    if (window.emailjs) {
+        return Promise.resolve(window.emailjs);
+    }
+
+    if (emailJsLoadPromise) {
+        return emailJsLoadPromise;
+    }
+
+    emailJsLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = EMAILJS_CDN_URL;
+        script.async = true;
+
+        script.onload = () => {
+            if (window.emailjs) {
+                resolve(window.emailjs);
+            } else {
+                reject(new Error('EmailJS loaded but window.emailjs is unavailable'));
+            }
+        };
+
+        script.onerror = () => {
+            reject(new Error('Failed to load EmailJS library from CDN'));
+        };
+
+        document.head.appendChild(script);
+    });
+
+    return emailJsLoadPromise;
+}
+
 function sendEmail(type, employeeId, time) {
     const emailData = {
         employee_name: employeeId,
@@ -374,15 +414,8 @@ function sendEmail(type, employeeId, time) {
     console.log('📧 Attempting to send email via EmailJS...');
     console.log('📧 Email data:', emailData);
 
-    if (typeof emailjs === 'undefined') {
-        return Promise.resolve({
-            success: false,
-            message: 'EmailJS library not loaded',
-            error: 'emailjs is undefined'
-        });
-    }
-
-    return emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, emailData)
+    return ensureEmailJsLoaded()
+        .then((emailjsClient) => emailjsClient.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, emailData))
         .then(() => {
             console.log('✅ Email sent successfully!');
             console.log('📬 Email delivered to:', CONFIG.notificationEmail);
@@ -393,20 +426,21 @@ function sendEmail(type, employeeId, time) {
         })
         .catch(error => {
             console.error('❌ Email failed to send!');
-            console.error('❌ Error:', error.message);
+            console.error('❌ Error:', error && error.message ? error.message : error);
 
             let friendlyMessage = 'Email service error';
+            const errMsg = error && error.message ? error.message : String(error);
 
-            if (/EmailJS|service|template/i.test(error.message)) {
+            if (/EmailJS|service|template/i.test(errMsg)) {
                 friendlyMessage = 'EmailJS configuration error. Check SERVICE_ID and TEMPLATE_ID in config.';
-            } else if (/validation/i.test(error.message)) {
+            } else if (/validation/i.test(errMsg)) {
                 friendlyMessage = 'EmailJS validation error. Check your settings.';
             }
 
             return {
                 success: false,
                 message: friendlyMessage,
-                error: error.message
+                error: errMsg
             };
         });
 }
@@ -488,6 +522,9 @@ function selectEmployee() {
     currentUser = selectedName;
     console.log('✅ Employee selected:', currentUser);
     showMessage(`Welcome, ${currentUser}!`, 'success');
+
+    // Request location from a user gesture to avoid quiet permission prompts.
+    getLocation();
     
     loadTodayAttendance();
 }
@@ -514,6 +551,10 @@ async function checkIn() {
         return;
     }
     
+    if (!userLocation) {
+        await getLocation();
+    }
+
     if (isLocationEnforced()) {
         // Check if location is available
         if (!userLocation) {
@@ -571,6 +612,10 @@ async function checkOut() {
         return;
     }
     
+    if (!userLocation) {
+        await getLocation();
+    }
+
     if (isLocationEnforced()) {
         // Check if location is available
         if (!userLocation) {
@@ -819,19 +864,24 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ System Initialized');
 
     // Initialize EmailJS
-    if (typeof emailjs !== 'undefined') {
-        emailjs.init(CONFIG.emailjs.publicKey);
-        console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
-    } else {
-        console.warn('⚠️ EmailJS library not loaded! Make sure to add the EmailJS script to HTML.');
-    }
+    ensureEmailJsLoaded()
+        .then((emailjsClient) => {
+            emailjsClient.init(CONFIG.emailjs.publicKey);
+            console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
+        })
+        .catch((error) => {
+            console.warn('⚠️ EmailJS library not loaded! Make sure internet/CDN access is available.');
+            console.warn('⚠️ EmailJS load error:', error && error.message ? error.message : error);
+        });
     
     // Start date/time update
     updateDateTime();
     setInterval(updateDateTime, 1000);
     
-    // Start location tracking
-    getLocation();
+    // Wait for user action to request location permission.
+    if (locationStatusSpan) {
+        locationStatusSpan.textContent = '📍 Select employee or tap Check-In/Out to detect location';
+    }
     
     // Employee selection
     if (employeeSelect) {
