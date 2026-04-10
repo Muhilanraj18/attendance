@@ -7,7 +7,7 @@
 const CONFIG = {
     notificationPhone: '+917418167906',
     notificationEmail: 'info@craftedclipz.in',
-    useEmailJs: false,
+    useEmailJs: true,
     notifyViaWhatsApp: true,
     enforceLocation: false, // Disabled for testing: allow check-in/check-out from any location
     officeLocation: { lat: 8.1848938, lng: 77.3947 }, // Kottavilai Rd, Nagercoil - Required location for check-in/out
@@ -29,7 +29,6 @@ let currentUser = null;
 let userLocation = null;
 let locationDistance = null;
 let attendanceCache = {};
-let emailJsLoadPromise = null;
 
 // DOM Elements
 const employeeSelect = document.getElementById('employeeSelect');
@@ -39,11 +38,6 @@ const btnCheckIn = document.getElementById('btnCheckIn');
 const btnCheckOut = document.getElementById('btnCheckOut');
 const messageBox = document.getElementById('messageBox');
 const locationStatusSpan = document.getElementById('locationStatus');
-
-const EMAILJS_CDN_URLS = [
-    'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js',
-    'https://unpkg.com/@emailjs/browser@4/dist/email.min.js'
-];
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -93,6 +87,15 @@ function getAttendanceStatus(checkInTime) {
 
 function isLocationEnforced() {
     return CONFIG.enforceLocation === true;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // ============================================
@@ -367,92 +370,65 @@ function simulateNotification(type, employeeId, time, options = {}) {
     return message;
 }
 
-// ============================================
-// EMAIL SENDING (EmailJS)
-// ============================================
-
-function ensureEmailJsLoaded() {
-    if (window.emailjs) {
-        return Promise.resolve(window.emailjs);
-    }
-
-    if (emailJsLoadPromise) {
-        return emailJsLoadPromise;
-    }
-
-    emailJsLoadPromise = new Promise((resolve, reject) => {
-        let index = 0;
-
-        const tryNextCdn = () => {
-            if (index >= EMAILJS_CDN_URLS.length) {
-                reject(new Error('Failed to load EmailJS library from all CDN sources'));
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = EMAILJS_CDN_URLS[index];
-            script.async = true;
-
-            script.onload = () => {
-                if (window.emailjs) {
-                    resolve(window.emailjs);
-                } else {
-                    index += 1;
-                    tryNextCdn();
-                }
-            };
-
-            script.onerror = () => {
-                index += 1;
-                tryNextCdn();
-            };
-
-            document.head.appendChild(script);
-        };
-
-        tryNextCdn();
-    });
-
-    return emailJsLoadPromise.catch((error) => {
-        // Allow retry in future interactions if network conditions change.
-        emailJsLoadPromise = null;
-        throw error;
-    });
+function isEmailJsConfigured() {
+    return !!(
+        CONFIG.emailjs.serviceId &&
+        CONFIG.emailjs.templateId &&
+        CONFIG.emailjs.publicKey &&
+        !CONFIG.emailjs.serviceId.includes('YOUR_') &&
+        !CONFIG.emailjs.templateId.includes('YOUR_') &&
+        !CONFIG.emailjs.publicKey.includes('YOUR_')
+    );
 }
 
-async function sendEmailViaBackend(emailData) {
-    try {
-        const response = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(emailData)
-        });
+function buildEmailJsTemplateParams(emailData) {
+    return {
+        to_email: CONFIG.notificationEmail,
+        employee_name: escapeHtml(emailData.employee_name),
+        action: escapeHtml(emailData.action),
+        date: escapeHtml(emailData.date),
+        time: escapeHtml(emailData.time),
+        phone: escapeHtml(emailData.phone),
+        email: escapeHtml(emailData.email),
+        location: escapeHtml(emailData.location),
+        distance: escapeHtml(emailData.distance),
+        subject: `Attendance Alert - ${escapeHtml(emailData.action)}`,
+        message: [
+            `Employee Name: ${escapeHtml(emailData.employee_name)}`,
+            `Action: ${escapeHtml(emailData.action)}`,
+            `Date: ${escapeHtml(emailData.date)}`,
+            `Time: ${escapeHtml(emailData.time)}`,
+            `Phone: ${escapeHtml(emailData.phone)}`,
+            `Location: ${escapeHtml(emailData.location)}`,
+            `Distance: ${escapeHtml(emailData.distance)}`
+        ].join('\n')
+    };
+}
 
-        let payload = null;
-        try {
-            payload = await response.json();
-        } catch (jsonError) {
-            payload = null;
-        }
+async function sendEmailViaEmailJsRest(emailData) {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            service_id: CONFIG.emailjs.serviceId,
+            template_id: CONFIG.emailjs.templateId,
+            user_id: CONFIG.emailjs.publicKey,
+            template_params: buildEmailJsTemplateParams(emailData)
+        })
+    });
 
-        if (!response.ok || !payload || payload.success !== true) {
-            const serverMessage = payload && payload.message ? payload.message : `HTTP ${response.status}`;
-            throw new Error(serverMessage);
-        }
+    const responseText = await response.text();
 
-        return {
-            success: true,
-            message: payload.message || 'Email sent successfully via server'
-        };
-    } catch (error) {
-        return {
-            success: false,
-            message: 'Email service unavailable (CDN and backend failed)',
-            error: error && error.message ? error.message : String(error)
-        };
+    if (!response.ok) {
+        throw new Error(responseText || `HTTP ${response.status}`);
     }
+
+    return {
+        success: true,
+        message: responseText || 'Email sent successfully via EmailJS'
+    };
 }
 
 function sendEmail(type, employeeId, time) {
@@ -471,15 +447,20 @@ function sendEmail(type, employeeId, time) {
     console.log('📧 Email data:', emailData);
 
     if (!CONFIG.useEmailJs) {
-        console.log('📧 Using backend email API mode (EmailJS disabled)');
-        return sendEmailViaBackend(emailData);
+        return Promise.resolve({
+            success: false,
+            message: 'EmailJS is disabled in configuration'
+        });
     }
 
-    return ensureEmailJsLoaded()
-        .then((emailjsClient) => {
-            emailjsClient.init(CONFIG.emailjs.publicKey);
-            return emailjsClient.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, emailData);
-        })
+    if (!isEmailJsConfigured()) {
+        return Promise.resolve({
+            success: false,
+            message: 'EmailJS is not configured. Update serviceId, templateId, and publicKey.'
+        });
+    }
+
+    return sendEmailViaEmailJsRest(emailData)
         .then(() => {
             console.log('✅ Email sent successfully!');
             console.log('📬 Email delivered to:', CONFIG.notificationEmail);
@@ -488,21 +469,13 @@ function sendEmail(type, employeeId, time) {
                 message: 'Email sent successfully'
             };
         })
-        .catch(async (error) => {
+        .catch((error) => {
             const errMsg = error && error.message ? error.message : String(error);
-            console.error('❌ EmailJS send failed. Falling back to backend API.');
             console.error('❌ EmailJS error:', errMsg);
-
-            const fallbackResult = await sendEmailViaBackend(emailData);
-            if (fallbackResult.success) {
-                console.log('✅ Email sent successfully via backend fallback');
-                return fallbackResult;
-            }
-
             return {
                 success: false,
-                message: 'Email delivery failed. Check internet/CDN access or backend server status.',
-                error: `${errMsg} | Backend: ${fallbackResult.error || fallbackResult.message}`
+                message: `EmailJS send failed: ${errMsg}`,
+                error: errMsg
             };
         });
 }
@@ -927,17 +900,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize EmailJS
     if (CONFIG.useEmailJs) {
-        ensureEmailJsLoaded()
-            .then((emailjsClient) => {
-                emailjsClient.init(CONFIG.emailjs.publicKey);
-                console.log('✅ EmailJS initialized with key:', CONFIG.emailjs.publicKey);
-            })
-            .catch((error) => {
-                console.warn('⚠️ EmailJS library not loaded from CDN. Backend email fallback will be used if available.');
-                console.warn('⚠️ EmailJS load error:', error && error.message ? error.message : error);
-            });
+        if (isEmailJsConfigured()) {
+            console.log('✅ EmailJS REST API configured');
+        } else {
+            console.warn('⚠️ EmailJS credentials are incomplete. Update serviceId, templateId, and publicKey.');
+        }
     } else {
-        console.log('✅ Backend email mode enabled (EmailJS disabled)');
+        console.log('✅ EmailJS notifications are disabled in configuration');
     }
     
     // Start date/time update
